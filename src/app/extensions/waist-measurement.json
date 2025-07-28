@@ -1,0 +1,16 @@
+{
+  "type": "crm-card",
+  "data": {
+    "title": "Medición de Cintura",
+    "uid": "get_waist_measurement_card",
+    "location": "crm.record.tab",
+    "module": {
+      "file": "WaistMeasurement.jsx"
+    },
+    "objectTypes": [
+      {
+        "name": "p_hc"
+      }
+    ]
+  }
+}

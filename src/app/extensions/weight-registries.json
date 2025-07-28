@@ -1,0 +1,16 @@
+{
+  "type": "crm-card",
+  "data": {
+    "title": "Registros de Peso",
+    "uid": "get_weight_registries_card",
+    "location": "crm.record.tab",
+    "module": {
+      "file": "WeightRegistries.jsx"
+    },
+    "objectTypes": [
+      {
+        "name": "p_hc"
+      }
+    ]
+  }
+}

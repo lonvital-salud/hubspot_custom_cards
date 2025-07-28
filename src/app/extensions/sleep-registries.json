@@ -1,0 +1,16 @@
+{
+  "type": "crm-card",
+  "data": {
+    "title": "Registros de Sueño",
+    "uid": "get_sleep_registries_card",
+    "location": "crm.record.tab",
+    "module": {
+      "file": "SleepRegistries.jsx"
+    },
+    "objectTypes": [
+      {
+        "name": "p_hc"
+      }
+    ]
+  }
+}
