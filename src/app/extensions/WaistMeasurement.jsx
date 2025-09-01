@@ -9,6 +9,8 @@ import {
   TableHead,
   TableRow, TableHeader, TableBody, TableCell, TableFooter,
   LineChart,
+  DateInput,
+  Button
 } from "@hubspot/ui-extensions";
 
 // Define the extension to be run within the Hubspot CRM
@@ -34,6 +36,10 @@ const Extension = ({ context, runServerless, sendAlert }) => {
   const [isLoadedChart, setIsLoadedChart] = useState(false);
   const [dataChart, setDataChart] = useState([]);
 
+  const [startDate, setStartDate] = useState(null);
+  const [endDate, setEndDate] = useState(null);
+  const [filterApplied, setFilterApplied] = useState(false);
+
   useEffect(() => {
     // Fetch data from the serverless function
     const fetchData = async () => {
@@ -47,7 +53,9 @@ const Extension = ({ context, runServerless, sendAlert }) => {
             objectId: context.crm.objectId,
             page,
             length,
-            sortState
+            sortState,
+            startDate: startDate ? startDate : undefined,
+            endDate: endDate ? endDate : undefined,
           },
         })
         .then((response) => {
@@ -67,7 +75,7 @@ const Extension = ({ context, runServerless, sendAlert }) => {
     };
 
     fetchData();
-  }, [page, length, sortState]);
+  }, [page, length, sortState, filterApplied]);
 
   useEffect(() => {
     setIsLoadedChart(false);
@@ -90,82 +98,159 @@ const Extension = ({ context, runServerless, sendAlert }) => {
     }
   }, [data])
 
-  // Call serverless function to execute with parameters.
-  // The `myFunc` function name is configured inside `serverless.json`
-  const handleClick = async () => {
-    const { response } = await runServerless({ name: "waistMeasurement", parameters: { text: text } });
-    sendAlert({ message: response });
-  };
-
   if (!isComponentLoaded) {
     return <LoadingSpinner />
   }
 
   if (!isLoading && (!data || !data.length)) {
     return (
-      <EmptyState title="Aún nada por aquí" layout="vertical" reverseOrder={true}>
-        <Text>Espere mientras los pacientes comienzan a compartir su información!</Text>
-      </EmptyState>
+      <Flex gap="medium" direction="column">
+        <Flex gap="medium" align="end">
+          <DateInput
+            label="Desde"
+            value={startDate}
+            onChange={setStartDate}
+            placeholder="YYYY-MM-DD"
+            max={endDate || undefined}
+          />
+          <DateInput
+            label="Hasta"
+            value={endDate}
+            onChange={setEndDate}
+            placeholder="YYYY-MM-DD"
+            min={startDate || undefined}
+          />
+          <Button
+            type="primary"
+            onClick={() => {
+              setPage(1); // Reinicia la paginación al aplicar filtro
+              setFilterApplied((prev) => !prev); // Fuerza el useEffect
+            }}
+            disabled={!startDate && !endDate}
+          >
+            Filtrar
+          </Button>
+          {(startDate || endDate) && (
+            <Button
+              type="secondary"
+              onClick={() => {
+                setStartDate(null);
+                setEndDate(null);
+                setPage(1);
+                setFilterApplied((prev) => !prev);
+              }}
+            >
+              Limpiar filtro
+            </Button>
+          )}
+        </Flex>
+        <EmptyState title="Aún nada por aquí" layout="vertical" reverseOrder={true}>
+          <Text>Espere mientras los pacientes comienzan a compartir su información!</Text>
+        </EmptyState>
+      </Flex>
     )
   }
 
   return (
     <>
-      {(isLoadedChart && dataChart && dataChart.length) ? (
-        <LineChart
-          data={dataChart}
-          options={{
-            title: 'Evolución de la Medición de Cintura',
-            showLegend: true,
-            showDataLabels: true,
-            showTooltips: true,
-          }}
-          axes={{
-            x: { field: 'date', fieldType: 'datetime', label: 'Fecha' },
-            y: { field: 'waistMeasurement', fieldType: 'linear', label: 'Medición de Cintura (cm)' },
-          }}
-        />
-      ) : ''}
-      <Table paginated={true} page={page} pageCount={totalPages} onPageChange={(page) => {
-        setPage(page);
-      }}>
-        <TableHead>
-          <TableRow>
-            <TableHeader width={"min"}
-              sortDirection={sortState}
-              onSortChange={(sortDirection) =>
-                setSortState(sortDirection)
-              }
+      <Flex gap="medium" direction="column">
+        <Flex gap="medium" align="end">
+          <DateInput
+            label="Desde"
+            value={startDate}
+            onChange={setStartDate}
+            placeholder="YYYY-MM-DD"
+            max={endDate || undefined}
+          />
+          <DateInput
+            label="Hasta"
+            value={endDate}
+            onChange={setEndDate}
+            placeholder="YYYY-MM-DD"
+            min={startDate || undefined}
+          />
+          <Button
+            type="primary"
+            onClick={() => {
+              setPage(1); // Reinicia la paginación al aplicar filtro
+              setFilterApplied((prev) => !prev); // Fuerza el useEffect
+            }}
+            disabled={!startDate && !endDate}
+          >
+            Filtrar
+          </Button>
+          {(startDate || endDate) && (
+            <Button
+              type="secondary"
+              onClick={() => {
+                setStartDate(null);
+                setEndDate(null);
+                setPage(1);
+                setFilterApplied((prev) => !prev);
+              }}
             >
-              Fecha
-            </TableHeader>
-            <TableHeader width={"min"}>Circunferencia de cintura (cms.)</TableHeader>
-            <TableHeader width={"min"}>ICA</TableHeader>
-          </TableRow>
-        </TableHead>
-        <TableBody>
-          {isLoading ? (
-            <TableRow>
-              <TableCell colSpan={3}>
-                <Flex justify="center" align="center" gap="large">
-                  <LoadingSpinner label="Loading..." />
-                </Flex>
-              </TableCell>
-            </TableRow>
-          ) : (
-
-            data.map(({ id, ica, measurementTimeStamp, measurementWaistCm }) => {
-              return (
-                <TableRow key={id}>
-                  <TableCell width={"min"}>{new Date(measurementTimeStamp._seconds * 1000).toISOString().replace(/T/, ' ').replace(/\..+/, '')}</TableCell>
-                  <TableCell width={"min"}>{measurementWaistCm}</TableCell>
-                  <TableCell width={"min"}>{ica}</TableCell>
-                </TableRow>
-              );
-            })
+              Limpiar filtro
+            </Button>
           )}
-        </TableBody>
-      </Table>
+        </Flex>
+
+        {(isLoadedChart && dataChart && dataChart.length) ? (
+          <LineChart
+            data={dataChart}
+            options={{
+              title: 'Evolución de la Medición de Cintura',
+              showLegend: true,
+              showDataLabels: true,
+              showTooltips: true,
+            }}
+            axes={{
+              x: { field: 'date', fieldType: 'datetime', label: 'Fecha' },
+              y: { field: 'waistMeasurement', fieldType: 'linear', label: 'Medición de Cintura (cm)' },
+            }}
+          />
+        ) : ''}
+
+        <Table paginated={true} page={page} pageCount={totalPages} onPageChange={(page) => {
+          setPage(page);
+        }}>
+          <TableHead>
+            <TableRow>
+              <TableHeader width={"min"}
+                sortDirection={sortState}
+                onSortChange={(sortDirection) =>
+                  setSortState(sortDirection)
+                }
+              >
+                Fecha
+              </TableHeader>
+              <TableHeader width={"min"}>Circunferencia de cintura (cms.)</TableHeader>
+              <TableHeader width={"min"}>ICA</TableHeader>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {isLoading ? (
+              <TableRow>
+                <TableCell colSpan={3}>
+                  <Flex justify="center" align="center" gap="large">
+                    <LoadingSpinner label="Loading..." />
+                  </Flex>
+                </TableCell>
+              </TableRow>
+            ) : (
+
+              data.map(({ id, ica, measurementTimeStamp, measurementWaistCm }) => {
+                return (
+                  <TableRow key={id}>
+                    <TableCell width={"min"}>{new Date(measurementTimeStamp._seconds * 1000).toISOString().replace(/T/, ' ').replace(/\..+/, '')}</TableCell>
+                    <TableCell width={"min"}>{measurementWaistCm}</TableCell>
+                    <TableCell width={"min"}>{ica}</TableCell>
+                  </TableRow>
+                );
+              })
+            )}
+          </TableBody>
+        </Table>
+      </Flex>
     </>
   );
 };
