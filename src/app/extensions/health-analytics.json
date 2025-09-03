@@ -1,0 +1,16 @@
+{
+  "type": "crm-card",
+  "data": {
+    "title": "Registros de Analiticas",
+    "uid": "get_health_analytics_card",
+    "location": "crm.record.tab",
+    "module": {
+      "file": "HealthAnalytics.jsx"
+    },
+    "objectTypes": [
+      {
+        "name": "p_hc"
+      }
+    ]
+  }
+}

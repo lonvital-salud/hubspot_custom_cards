@@ -20,6 +20,9 @@
         },
         {
           "file": "extensions/waist-measurement.json"
+        },
+        {
+          "file": "extensions/health-analytics.json"
         }
       ]
     }

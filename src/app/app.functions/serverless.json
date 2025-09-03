@@ -2,15 +2,38 @@
   "appFunctions": {
     "weightRegistries": {
       "file": "weight-registries.js",
-      "secrets": ["LONVITAL_FIREBASE_API_URL", "LONVITAL_FIREBASE_API_TOKEN"]
+      "secrets": [
+        "LONVITAL_FIREBASE_API_URL",
+        "LONVITAL_FIREBASE_API_TOKEN"
+      ]
     },
     "sleepRegistries": {
       "file": "sleep-registries.js",
-      "secrets": ["LONVITAL_FIREBASE_API_URL", "LONVITAL_FIREBASE_API_TOKEN"]
+      "secrets": [
+        "LONVITAL_FIREBASE_API_URL",
+        "LONVITAL_FIREBASE_API_TOKEN"
+      ]
     },
     "waistMeasurement": {
       "file": "waist-measurement.js",
-      "secrets": ["LONVITAL_FIREBASE_API_URL", "LONVITAL_FIREBASE_API_TOKEN"]
+      "secrets": [
+        "LONVITAL_FIREBASE_API_URL",
+        "LONVITAL_FIREBASE_API_TOKEN"
+      ]
+    },
+    "healthAnalytics": {
+      "file": "health-analytics.js",
+      "secrets": [
+        "LONVITAL_FIREBASE_API_URL",
+        "LONVITAL_FIREBASE_API_TOKEN"
+      ]
+    },
+    "healthAnalyticDetail": {
+      "file": "health-analytic-detail.js",
+      "secrets": [
+        "LONVITAL_FIREBASE_API_URL",
+        "LONVITAL_FIREBASE_API_TOKEN"
+      ]
     }
   }
 }
