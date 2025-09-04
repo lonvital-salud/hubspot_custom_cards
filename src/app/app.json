@@ -23,6 +23,9 @@
         },
         {
           "file": "extensions/health-analytics.json"
+        },
+        {
+          "file": "extensions/health-contact-kpis.json"
         }
       ]
     }

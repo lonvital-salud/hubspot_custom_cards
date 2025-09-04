@@ -19,36 +19,43 @@ exports.main = async (context = {}) => {
     accessToken: process.env['PRIVATE_APP_ACCESS_TOKEN']
   });
 
-  const response = await hubspotClient.crm.objects.associationsApi.getAll(
-    context.parameters.objectType,
-    context.parameters.objectId,
-    'contacts'
-  );
+  try {
+    const response = await hubspotClient.crm.objects.associationsApi.getAll(
+      context.parameters.objectType,
+      context.parameters.objectId,
+      'contacts'
+    );
 
-  const associatedContactId = response.results[0].id;
-  const contact = await hubspotClient.crm.contacts.basicApi.getById(associatedContactId, ['firstname', 'lastname', 'email']);
+    const associatedContactId = response.results[0].id;
+    const contact = await hubspotClient.crm.contacts.basicApi.getById(associatedContactId, ['firstname', 'lastname', 'email']);
 
-  const params = {
-    key: firebaseApiToken,
-    userId: contact.properties.email,
-    page: context.parameters.page,
-    pageSize: context.parameters.length,
-    order: context.parameters.sortState === 'ascending' ? 'asc' : 'desc',
-  };
+    const params = {
+      key: firebaseApiToken,
+      userId: contact.properties.email,
+      page: context.parameters.page,
+      pageSize: context.parameters.length,
+      order: context.parameters.sortState === 'ascending' ? 'asc' : 'desc',
+    };
 
-  const startDate = formatDateObj(context.parameters.startDate);
-  const endDate = formatDateObj(context.parameters.endDate);
-  if (startDate) {
-    params.from = `${startDate}T00:00:00.000Z`; // Agregar 'T00:00:00.000Z' al final de la fecha startDate;
+    const startDate = formatDateObj(context.parameters.startDate);
+    const endDate = formatDateObj(context.parameters.endDate);
+    if (startDate) {
+      params.from = `${startDate}T00:00:00.000Z`; // Agregar 'T00:00:00.000Z' al final de la fecha startDate;
+    }
+    if (endDate) {
+      params.to = `${endDate}T23:59:59.000Z`; // Agregar 'T23:59:59.000Z' al final de la fecha endDate;
+    }
+
+    console.log(params);
+    return await axios.get(`${firebaseApiUrl}/firebase_get-weight-registries`, {
+      params
+    }).then((response) => {
+      return response.data;
+    });
+  } catch (error) {
+    console.log(error);
   }
-  if (endDate) {
-    params.to = `${endDate}T23:59:59.000Z`; // Agregar 'T23:59:59.000Z' al final de la fecha endDate;
-  }
 
-  return await axios.get(`${firebaseApiUrl}/firebase_get-weight-registries`, {
-    params
-  }).then((response) => {
-    return response.data;
-  });
+
 };
 

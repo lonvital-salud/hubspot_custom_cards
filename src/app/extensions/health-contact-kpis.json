@@ -1,0 +1,19 @@
+{
+  "type": "crm-card",
+  "data": {
+    "title": "KPIs",
+    "uid": "lonvital-health-contact-kpis",
+    "location": "crm.record.tab",
+    "module": {
+      "file": "HealthContactKpis.jsx"
+    },
+    "objectTypes": [
+      {
+        "name": "contact"
+      },
+      {
+        "name": "p_hc"
+      }
+    ]
+  }
+}
