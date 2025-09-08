@@ -23,11 +23,11 @@
         },
         {
           "file": "extensions/health-analytics.json"
+        },
+        {
+          "file": "extensions/HealthDashboard/health-dashboard.json"
         }
       ]
     }
-  },
-  "webhooks": {
-    "file": "./webhooks/webhooks.json"
   }
 }

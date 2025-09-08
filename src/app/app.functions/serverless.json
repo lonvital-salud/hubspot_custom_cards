@@ -34,6 +34,25 @@
         "LONVITAL_FIREBASE_API_URL",
         "LONVITAL_FIREBASE_API_TOKEN"
       ]
+    },
+    "healthDashboard": {
+      "file": "health-dashboard.js",
+      "secrets": [
+        "LONVITAL_FIREBASE_API_URL",
+        "LONVITAL_FIREBASE_API_TOKEN"
+      ]
+    },
+    "generateAISummary": {
+      "file": "generate-ai-summary.js",
+      "secrets": [
+        "OPENAI_API_KEY"
+      ]
+    },
+    "aiChat": {
+      "file": "ai-chat.js",
+      "secrets": [
+        "OPENAI_API_KEY"
+      ]
     }
   }
 }
