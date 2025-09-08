@@ -40,15 +40,31 @@ function calculateKPIs(currentData, previousData) {
   const currentTotalSleep = calculateAverage(currentData.sleep, 'duration');
   const previousTotalSleep = calculateAverage(previousData.sleep, 'duration');
   
-  // Deep sleep KPI (assuming quality "good" represents deep sleep - this may need adjustment)
-  const currentDeepSleep = currentData.sleep ? 
-    currentData.sleep.filter(s => s.quality === 'good').length * 2 / currentData.sleep.length * (currentTotalSleep || 0) : null;
-  const previousDeepSleep = previousData.sleep ? 
-    previousData.sleep.filter(s => s.quality === 'good').length * 2 / previousData.sleep.length * (previousTotalSleep || 0) : null;
+  // Deep sleep KPI (API no provee deepSleep, estimamos como 22% del sueño total)
+  const estimateDeepSleep = (sleepData) => {
+    if (!sleepData || sleepData.length === 0) return null;
+    const validSleepData = sleepData.filter(item => item.duration != null && !isNaN(item.duration));
+    if (validSleepData.length === 0) return null;
+    
+    return validSleepData.map(item => ({
+      ...item,
+      deepSleep: item.duration * 0.22 // Estimación: 22% del sueño total
+    }));
+  };
   
-  // Steps KPI (mock data for now since not in API spec)
-  const currentSteps = 8500; // Mock average
-  const previousSteps = 8200; // Mock average
+  const currentSleepWithDeepSleep = estimateDeepSleep(currentData.sleep);
+  const previousSleepWithDeepSleep = estimateDeepSleep(previousData.sleep);
+  
+  const currentDeepSleep = calculateAverage(currentSleepWithDeepSleep, 'deepSleep');
+  const previousDeepSleep = calculateAverage(previousSleepWithDeepSleep, 'deepSleep');
+  
+  // Steps KPI (use real data if available, otherwise mock data)
+  const currentSteps = calculateAverage(currentData.steps, 'steps') || 8500;
+  const previousSteps = calculateAverage(previousData.steps, 'steps') || 8200;
+  
+  // Waist KPI (API usa campo 'waist' no 'measurement')
+  const currentWaist = calculateAverage(currentData.waist, 'waist');
+  const previousWaist = calculateAverage(previousData.waist, 'waist');
 
   return {
     weight: {
@@ -80,6 +96,11 @@ function calculateKPIs(currentData, previousData) {
       current: currentSteps,
       previous: previousSteps,
       change: calculateChange(currentSteps, previousSteps)
+    },
+    waist: {
+      current: currentWaist,
+      previous: previousWaist,
+      change: calculateChange(currentWaist, previousWaist)
     }
   };
 }
@@ -111,24 +132,41 @@ function formatChartData(data) {
 
   const formatSleep = (sleepData) => {
     return sleepData.map(item => ({
-      date: new Date(item.datetime).toISOString(),
+      date: new Date(item.datetime).toISOString(), // API usa 'datetime'
       duration: item.duration,
+      deepSleep: item.duration * 0.22, // Estimación del sueño profundo
       quality: item.quality
+    })).sort((a, b) => new Date(a.date) - new Date(b.date));
+  };
+
+  const formatSteps = (stepsData) => {
+    return stepsData.map(item => ({
+      date: new Date(item.date).toISOString(),
+      steps: item.steps
+    })).sort((a, b) => new Date(a.date) - new Date(b.date));
+  };
+
+  const formatWaist = (waistData) => {
+    return waistData.map(item => ({
+      date: new Date(item.measurementTimeStamp).toISOString(), // API usa 'measurementTimeStamp'
+      measurement: item.waist // API usa 'waist' no 'measurement'
     })).sort((a, b) => new Date(a.date) - new Date(b.date));
   };
 
   return {
     weightData: data.weight ? formatWeight(data.weight) : [],
     compositionData: data.weight ? formatComposition(data.weight) : [],
-    sleepData: data.sleep ? formatSleep(data.sleep) : []
+    sleepData: data.sleep ? formatSleep(data.sleep) : [],
+    stepsData: data.steps ? formatSteps(data.steps) : [],
+    waistData: data.waist ? formatWaist(data.waist) : []
   };
 }
 
 exports.main = async (context = {}) => {
   try {
-    // Use environment variables or fallback to mock API
-    const firebaseApiUrl = process.env['LONVITAL_FIREBASE_API_URL'];
-    const firebaseApiToken = process.env['LONVITAL_FIREBASE_API_TOKEN'];
+    // Use Lonvital API instead of Firebase API
+    const lonvitalApiUrl = process.env['LONVITAL_API_URL'] || 'https://api.lonvital.com/v1/health';
+    const lonvitalApiKey = process.env['LONVITAL_API_KEY'];
 
     const hubspotClient = new hubspot.Client({
       accessToken: process.env['PRIVATE_APP_ACCESS_TOKEN']
@@ -148,7 +186,14 @@ exports.main = async (context = {}) => {
     );
 
     // Use email or historia_clinica as userId
-    const userId = contact.properties.email || contact.properties.historia_clinica;
+    let userId = contact.properties.email || contact.properties.historia_clinica;
+    let useHistoriaClinnica = false;
+    
+    // Si no tiene email pero sí tiene historia clínica, usar búsqueda por HC
+    if (!contact.properties.email && contact.properties.historia_clinica) {
+      userId = contact.properties.historia_clinica;
+      useHistoriaClinnica = true;
+    }
     
     if (!userId) {
       throw new Error('No se encontró email o historia clínica para el contacto');
@@ -159,49 +204,64 @@ exports.main = async (context = {}) => {
     const previousStart = context.parameters.previousStart;
     const previousEnd = context.parameters.previousEnd;
 
-    // Parameters for Firebase API
-    const baseParams = {
-      key: firebaseApiToken,
-      userEmail: contact.properties.email,
-      userId: contact.properties.lonvital_app_uid || contact.properties.email,
-      pageSize: 100
+    // Headers for Lonvital API
+    const headers = {
+      'x-api-key': lonvitalApiKey,
+      'Content-Type': 'application/json'
     };
 
-    // Fetch current period data
+    // Prepare base params for API calls
+    const getBaseParams = (from, to) => {
+      const params = { from, to, pageSize: 100 };
+      if (useHistoriaClinnica) {
+        params.findByHc = true;
+      }
+      return params;
+    };
+
+    // Fetch current period data using new Lonvital API
     const currentDataPromises = [
-      axios.get(`${firebaseApiUrl}/firebase_get-weight-registries`, {
-        params: { ...baseParams, from: `${currentStart}T00:00:00.000Z`, to: `${currentEnd}T23:59:59.000Z` }
+      axios.get(`${lonvitalApiUrl}/weight/${userId}`, {
+        params: getBaseParams(currentStart, currentEnd),
+        headers
       }).catch(() => ({ data: { data: [] } })),
       
-      axios.get(`${firebaseApiUrl}/firebase_get-sleep-registries`, {
-        params: { ...baseParams, from: `${currentStart}T00:00:00.000Z`, to: `${currentEnd}T23:59:59.000Z` }
+      axios.get(`${lonvitalApiUrl}/sleep/${userId}`, {
+        params: getBaseParams(currentStart, currentEnd),
+        headers
       }).catch(() => ({ data: { data: [] } })),
       
-      axios.get(`${firebaseApiUrl}/firebase_get-waist-measurement`, {
-        params: { ...baseParams, from: `${currentStart}T00:00:00.000Z`, to: `${currentEnd}T23:59:59.000Z` }
+      axios.get(`${lonvitalApiUrl}/waist/${userId}`, {
+        params: getBaseParams(currentStart, currentEnd),
+        headers
       }).catch(() => ({ data: { data: [] } })),
       
-      axios.get(`${firebaseApiUrl}/firebase_get-health-analytics`, {
-        params: { ...baseParams, from: `${currentStart}T00:00:00.000Z`, to: `${currentEnd}T23:59:59.000Z` }
+      axios.get(`${lonvitalApiUrl}/analytics/${userId}`, {
+        params: getBaseParams(currentStart, currentEnd),
+        headers
       }).catch(() => ({ data: { data: [] } }))
     ];
 
-    // Fetch previous period data
+    // Fetch previous period data using new Lonvital API
     const previousDataPromises = [
-      axios.get(`${firebaseApiUrl}/firebase_get-weight-registries`, {
-        params: { ...baseParams, from: `${previousStart}T00:00:00.000Z`, to: `${previousEnd}T23:59:59.000Z` }
+      axios.get(`${lonvitalApiUrl}/weight/${userId}`, {
+        params: getBaseParams(previousStart, previousEnd),
+        headers
       }).catch(() => ({ data: { data: [] } })),
       
-      axios.get(`${firebaseApiUrl}/firebase_get-sleep-registries`, {
-        params: { ...baseParams, from: `${previousStart}T00:00:00.000Z`, to: `${previousEnd}T23:59:59.000Z` }
+      axios.get(`${lonvitalApiUrl}/sleep/${userId}`, {
+        params: getBaseParams(previousStart, previousEnd),
+        headers
       }).catch(() => ({ data: { data: [] } })),
       
-      axios.get(`${firebaseApiUrl}/firebase_get-waist-measurement`, {
-        params: { ...baseParams, from: `${previousStart}T00:00:00.000Z`, to: `${previousEnd}T23:59:59.000Z` }
+      axios.get(`${lonvitalApiUrl}/waist/${userId}`, {
+        params: getBaseParams(previousStart, previousEnd),
+        headers
       }).catch(() => ({ data: { data: [] } })),
       
-      axios.get(`${firebaseApiUrl}/firebase_get-health-analytics`, {
-        params: { ...baseParams, from: `${previousStart}T00:00:00.000Z`, to: `${previousEnd}T23:59:59.000Z` }
+      axios.get(`${lonvitalApiUrl}/analytics/${userId}`, {
+        params: getBaseParams(previousStart, previousEnd),
+        headers
       }).catch(() => ({ data: { data: [] } }))
     ];
 
@@ -211,19 +271,21 @@ exports.main = async (context = {}) => {
       Promise.all(previousDataPromises)
     ]);
 
-    // Structure the data
+    // Structure the data for new API format
     const currentData = {
       weight: currentResults[0].data.data || [],
       sleep: currentResults[1].data.data || [],
       waist: currentResults[2].data.data || [],
-      analytics: currentResults[3].data.data || []
+      analytics: currentResults[3].data.data || [],
+      steps: [] // Mock data as steps are not in API yet
     };
 
     const previousData = {
       weight: previousResults[0].data.data || [],
       sleep: previousResults[1].data.data || [],
       waist: previousResults[2].data.data || [],
-      analytics: previousResults[3].data.data || []
+      analytics: previousResults[3].data.data || [],
+      steps: [] // Mock data as steps are not in API yet
     };
 
     // Calculate KPIs
@@ -263,9 +325,12 @@ exports.main = async (context = {}) => {
           { date: '2025-01-15T00:00:00Z', value: 15.3, type: 'Masa Grasa' }
         ],
         sleepData: [
-          { date: '2025-01-01T00:00:00Z', duration: 7.5, quality: 'good' },
-          { date: '2025-01-02T00:00:00Z', duration: 6.8, quality: 'fair' },
-          { date: '2025-01-03T00:00:00Z', duration: 8.2, quality: 'good' }
+          { datetime: '2025-01-01T00:00:00Z', duration: 7.5, quality: 'good' },
+          { datetime: '2025-01-02T00:00:00Z', duration: 6.8, quality: 'fair' },
+          { datetime: '2025-01-03T00:00:00Z', duration: 8.2, quality: 'good' }
+        ],
+        waistData: [
+          { measurementTimeStamp: '2025-01-01T00:00:00Z', waist: 85.2 }
         ]
       },
       kpis: {
@@ -274,7 +339,8 @@ exports.main = async (context = {}) => {
         fat: { current: 15.4, previous: 16.1, change: -4.3 },
         totalSleep: { current: 7.5, previous: 7.2, change: 4.2 },
         deepSleep: { current: 2.8, previous: 2.5, change: 12.0 },
-        steps: { current: 8500, previous: 8200, change: 3.7 }
+        steps: { current: 8500, previous: 8200, change: 3.7 },
+        waist: { current: 85.2, previous: 85.8, change: -0.7 }
       }
     };
   }

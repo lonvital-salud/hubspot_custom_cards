@@ -1,12 +1,12 @@
 /**
  * Lonvital API Service
- * Wrapper para la API de Lonvital con manejo de errores y datos mock
+ * Wrapper para la API de Lonvital 
  */
 
 const LONVITAL_API_BASE = 'https://api.lonvital.com/v1/health';
-const API_KEY = process.env.LONVITAL_FIREBASE_API_TOKEN || 'mock-api-key';
+const API_KEY = process.env.LONVITAL_API_KEY || 'mock-api-key';
 
-// Datos mock para desarrollo/fallback
+// Datos mock para desarrollo/fallback pruebas
 const MOCK_DATA = {
   weight: [
     { date: '2024-01-01', weight: 70.5, muscle: 35.2, fat: 15.8 },
@@ -16,18 +16,18 @@ const MOCK_DATA = {
     { date: '2024-01-05', weight: 69.6, muscle: 34.8, fat: 16.2 }
   ],
   sleep: [
-    { date: '2024-01-01', duration: 7.5, deepSleep: 2.1, quality: 'good' },
-    { date: '2024-01-02', duration: 8.0, deepSleep: 2.3, quality: 'excellent' },
-    { date: '2024-01-03', duration: 6.8, deepSleep: 1.9, quality: 'fair' },
-    { date: '2024-01-04', duration: 7.2, deepSleep: 2.0, quality: 'good' },
-    { date: '2024-01-05', duration: 7.8, deepSleep: 2.2, quality: 'good' }
+    { datetime: '2024-01-01', duration: 7.5, quality: 'good' },
+    { datetime: '2024-01-02', duration: 8.0, quality: 'excellent' },
+    { datetime: '2024-01-03', duration: 6.8, quality: 'fair' },
+    { datetime: '2024-01-04', duration: 7.2, quality: 'good' },
+    { datetime: '2024-01-05', duration: 7.8, quality: 'good' }
   ],
   waist: [
-    { date: '2024-01-01', measurement: 85.2 },
-    { date: '2024-01-02', measurement: 85.0 },
-    { date: '2024-01-03', measurement: 84.8 },
-    { date: '2024-01-04', measurement: 84.5 },
-    { date: '2024-01-05', measurement: 84.3 }
+    { measurementTimeStamp: '2024-01-01', waist: 85.2 },
+    { measurementTimeStamp: '2024-01-02', waist: 85.0 },
+    { measurementTimeStamp: '2024-01-03', waist: 84.8 },
+    { measurementTimeStamp: '2024-01-04', waist: 84.5 },
+    { measurementTimeStamp: '2024-01-05', waist: 84.3 }
   ],
   analytics: [
     {
@@ -86,14 +86,14 @@ async function makeRequest(endpoint, params = {}) {
 /**
  * Filtra datos por rango de fechas
  */
-function filterByDateRange(data, startDate, endDate) {
+function filterByDateRange(data, startDate, endDate, dateField = 'date') {
   if (!data || !Array.isArray(data)) return [];
   
   const start = new Date(startDate);
   const end = new Date(endDate);
   
   return data.filter(item => {
-    const itemDate = new Date(item.date);
+    const itemDate = new Date(item[dateField]);
     return itemDate >= start && itemDate <= end;
   });
 }
@@ -142,7 +142,7 @@ export async function getSleepData(userId, startDate = null, endDate = null) {
   const sleepData = data.data || [];
   
   if (startDate && endDate) {
-    return filterByDateRange(sleepData, startDate, endDate);
+    return filterByDateRange(sleepData, startDate, endDate, 'datetime');
   }
   
   return sleepData;
@@ -167,7 +167,7 @@ export async function getWaistData(userId, startDate = null, endDate = null) {
   const waistData = data.data || [];
   
   if (startDate && endDate) {
-    return filterByDateRange(waistData, startDate, endDate);
+    return filterByDateRange(waistData, startDate, endDate, 'measurementTimeStamp');
   }
   
   return waistData;
@@ -215,7 +215,7 @@ export async function getAnalyticsDetail(userId, documentId) {
 }
 
 /**
- * Obtiene datos de pasos (mock - no está en la API especificada)
+ * Obtiene datos de pasos 
  */
 export async function getStepsData(userId, startDate = null, endDate = null) {
   // Como no está en la API, siempre usamos datos mock
@@ -292,12 +292,28 @@ export function calculateKPIs(currentData, previousData) {
   const currentTotalSleep = calculateAverage(currentData.sleep, 'duration');
   const previousTotalSleep = calculateAverage(previousData.sleep, 'duration');
   
-  const currentDeepSleep = calculateAverage(currentData.sleep, 'deepSleep');
-  const previousDeepSleep = calculateAverage(previousData.sleep, 'deepSleep');
+  // Deep sleep KPI (API no provee deepSleep, estimamos como 22% del sueño total)
+  const estimateDeepSleepData = (sleepData) => {
+    if (!sleepData || sleepData.length === 0) return [];
+    return sleepData.map(item => ({
+      ...item,
+      deepSleep: item.duration * 0.22 // Estimación: 22% del sueño total
+    }));
+  };
+  
+  const currentSleepWithDeepSleep = estimateDeepSleepData(currentData.sleep);
+  const previousSleepWithDeepSleep = estimateDeepSleepData(previousData.sleep);
+  
+  const currentDeepSleep = calculateAverage(currentSleepWithDeepSleep, 'deepSleep');
+  const previousDeepSleep = calculateAverage(previousSleepWithDeepSleep, 'deepSleep');
   
   // KPI de pasos
   const currentSteps = calculateAverage(currentData.steps, 'steps');
   const previousSteps = calculateAverage(previousData.steps, 'steps');
+  
+  // KPI de cintura (API usa campo 'waist' no 'measurement')
+  const currentWaist = calculateAverage(currentData.waist, 'waist');
+  const previousWaist = calculateAverage(previousData.waist, 'waist');
 
   return {
     weight: {
@@ -329,6 +345,12 @@ export function calculateKPIs(currentData, previousData) {
       current: currentSteps,
       previous: previousSteps,
       change: calculateChange(currentSteps, previousSteps)
+    },
+    waist: {
+      current: currentWaist,
+      previous: previousWaist,
+      change: calculateChange(currentWaist, previousWaist)
     }
   };
 }
+

@@ -9,15 +9,10 @@ import {
     Input,
     LineChart,
     LoadingSpinner,
-    Panel, PanelBody,
-    PanelFooter,
-    PanelSection,
+    Panel,
     Select,
-    StatCard,
     Text,
-    Tile,
-    TileBody,
-    TileHeader
+    Tile
 } from "@hubspot/ui-extensions";
 import React, { useCallback, useEffect, useState } from "react";
 
@@ -77,22 +72,24 @@ const KPICard = ({ title, current, previous, change, unit, trend }) => {
   };
 
   return (
-    <StatCard>
-      <Text format={{ fontWeight: 'bold' }}>{title}</Text>
-      <Text format={{ fontSize: 'large' }}>
-        {formatValue(current)} {unit}
-      </Text>
-      {change !== null && change !== undefined && (
-        <Text format={{ color: getChangeColor(change), fontSize: 'small' }}>
-          {getChangeIcon(change)} {Math.abs(change).toFixed(1)}% vs período anterior
+    <Tile>
+      <Flex direction="column" gap="small">
+        <Text format={{ fontWeight: 'bold' }}>{title}</Text>
+        <Text format={{ fontSize: 'large' }}>
+          {formatValue(current)} {unit}
         </Text>
-      )}
-      {trend && (
-        <Text format={{ fontSize: 'small', color: 'secondary' }}>
-          Tendencia: {trend}
-        </Text>
-      )}
-    </StatCard>
+        {change !== null && change !== undefined && (
+          <Text format={{ color: getChangeColor(change), fontSize: 'small' }}>
+            {getChangeIcon(change)} {Math.abs(change).toFixed(1)}% vs período anterior
+          </Text>
+        )}
+        {trend && (
+          <Text format={{ fontSize: 'small', color: 'secondary' }}>
+            Tendencia: {trend}
+          </Text>
+        )}
+      </Flex>
+    </Tile>
   );
 };
 
@@ -155,66 +152,61 @@ const AIChatPanel = ({ isOpen, onClose, currentData, kpis, context, runServerles
       id="ai-chat-panel" 
       title="Consulta con IA sobre los datos de salud"
       onClose={onClose}
-      variant="modal"
-      width="lg"
     >
-      <PanelBody>
-        <PanelSection>
-          <div style={{ height: '400px', overflowY: 'auto', marginBottom: '16px', border: '1px solid #e1e4e8', borderRadius: '4px', padding: '12px' }}>
-            {messages.length === 0 ? (
-              <Text format={{ color: 'secondary' }}>
-                ¡Hola! Soy tu asistente de IA especializado en salud. Puedo ayudarte a analizar los datos del paciente. 
-                Pregúntame sobre tendencias, interpretación de métricas, o cualquier aspecto de los datos de salud.
-              </Text>
-            ) : (
-              messages.map((message, index) => (
-                <div key={index} style={{ marginBottom: '12px' }}>
-                  <Text format={{ fontWeight: 'bold', color: message.role === 'user' ? 'primary' : 'secondary' }}>
-                    {message.role === 'user' ? '👤 Tú:' : '🤖 IA:'}
-                  </Text>
-                  <Text style={{ marginTop: '4px' }}>{message.content}</Text>
-                  <Text format={{ fontSize: 'small', color: 'secondary' }}>
-                    {new Date(message.timestamp).toLocaleTimeString()}
-                  </Text>
-                  <Divider />
-                </div>
-              ))
-            )}
-            {isLoading && (
-              <Flex align="center" gap="small">
-                <LoadingSpinner />
-                <Text format={{ color: 'secondary' }}>IA está escribiendo...</Text>
-              </Flex>
-            )}
-          </div>
-          
-          <Flex gap="small">
-            <Input
-              name="chatMessage"
-              value={inputMessage}
-              onChange={setInputMessage}
-              placeholder="Escribe tu pregunta sobre los datos de salud..."
-              disabled={isLoading}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && !e.shiftKey) {
-                  e.preventDefault();
-                  handleSendMessage();
-                }
-              }}
-            />
-            <Button 
-              onClick={handleSendMessage}
-              disabled={!inputMessage.trim() || isLoading}
-              type="primary"
-            >
-              Enviar
-            </Button>
-          </Flex>
-        </PanelSection>
-      </PanelBody>
-      <PanelFooter>
+      <Flex direction="column" gap="medium">
+        <div style={{ height: '400px', overflowY: 'auto', marginBottom: '16px', border: '1px solid #e1e4e8', borderRadius: '4px', padding: '12px' }}>
+          {messages.length === 0 ? (
+            <Text format={{ color: 'secondary' }}>
+              ¡Hola! Soy tu asistente de IA especializado en salud. Puedo ayudarte a analizar los datos del paciente. 
+              Pregúntame sobre tendencias, interpretación de métricas, o cualquier aspecto de los datos de salud.
+            </Text>
+          ) : (
+            messages.map((message, index) => (
+              <div key={index} style={{ marginBottom: '12px' }}>
+                <Text format={{ fontWeight: 'bold', color: message.role === 'user' ? 'primary' : 'secondary' }}>
+                  {message.role === 'user' ? '👤 Tú:' : '🤖 IA:'}
+                </Text>
+                <Text style={{ marginTop: '4px' }}>{message.content}</Text>
+                <Text format={{ fontSize: 'small', color: 'secondary' }}>
+                  {new Date(message.timestamp).toLocaleTimeString()}
+                </Text>
+                <Divider />
+              </div>
+            ))
+          )}
+          {isLoading && (
+            <Flex align="center" gap="small">
+              <LoadingSpinner />
+              <Text format={{ color: 'secondary' }}>IA está escribiendo...</Text>
+            </Flex>
+          )}
+        </div>
+        
+        <Flex gap="small">
+          <Input
+            name="chatMessage"
+            value={inputMessage}
+            onChange={setInputMessage}
+            placeholder="Escribe tu pregunta sobre los datos de salud..."
+            disabled={isLoading}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                handleSendMessage();
+              }
+            }}
+          />
+          <Button 
+            onClick={handleSendMessage}
+            disabled={!inputMessage.trim() || isLoading}
+            type="primary"
+          >
+            Enviar
+          </Button>
+        </Flex>
+        
         <Button onClick={onClose}>Cerrar Chat</Button>
-      </PanelFooter>
+      </Flex>
     </Panel>
   );
 };
@@ -226,34 +218,29 @@ const AISummaryPanel = ({ isOpen, onClose, summary, isLoading }) => {
       id="ai-summary-panel" 
       title={summary?.title || 'Resumen de IA'}
       onClose={onClose}
-      variant="modal"
-      width="lg"
     >
-      <PanelBody>
-        <PanelSection>
-          {isLoading ? (
-            <Flex justify="center" align="center" direction="column" gap="medium">
-              <LoadingSpinner />
-              <Text>Generando resumen con IA...</Text>
-            </Flex>
-          ) : summary ? (
-            <div>
-              {summary.dateRange && (
-                <Text format={{ fontSize: 'small', color: 'secondary' }}>
-                  Período: {summary.dateRange.label}
-                </Text>
-              )}
-              <Divider />
-              <Text>{summary.content}</Text>
-            </div>
-          ) : (
-            <EmptyState title="No hay resumen disponible" />
-          )}
-        </PanelSection>
-      </PanelBody>
-      <PanelFooter>
+      <Flex direction="column" gap="medium">
+        {isLoading ? (
+          <Flex justify="center" align="center" direction="column" gap="medium">
+            <LoadingSpinner />
+            <Text>Generando resumen con IA...</Text>
+          </Flex>
+        ) : summary ? (
+          <div>
+            {summary.dateRange && (
+              <Text format={{ fontSize: 'small', color: 'secondary' }}>
+                Período: {summary.dateRange.label}
+              </Text>
+            )}
+            <Divider />
+            <Text>{summary.content}</Text>
+          </div>
+        ) : (
+          <EmptyState title="No hay resumen disponible" />
+        )}
+        
         <Button onClick={onClose}>Cerrar</Button>
-      </PanelFooter>
+      </Flex>
     </Panel>
   );
 };
@@ -323,21 +310,26 @@ const Extension = ({ context, runServerless, sendAlert }) => {
     } catch (error) {
       console.error('Error loading health data:', error);
       
-      // Usar datos mock para desarrollo
+      // Usar datos mock para desarrollo con estructura correcta
+      const mockWeightData = [
+        { date: currentRange.startDate, weight: 70.5, muscle: 35.2, fat: 15.8 },
+        { date: currentRange.endDate, weight: 70.1, muscle: 35.0, fat: 16.0 }
+      ];
+      
+      const mockSleepData = [
+        { date: currentRange.startDate, duration: 7.5, deepSleep: 2.1, quality: 'good' },
+        { date: currentRange.endDate, duration: 7.8, deepSleep: 2.2, quality: 'good' }
+      ];
+
       const mockData = {
-        weight: [
-          { date: currentRange.startDate, weight: 70.5, muscle: 35.2, fat: 15.8 },
-          { date: currentRange.endDate, weight: 70.1, muscle: 35.0, fat: 16.0 }
-        ],
-        sleep: [
-          { date: currentRange.startDate, duration: 7.5, deepSleep: 2.1, quality: 'good' },
-          { date: currentRange.endDate, duration: 7.8, deepSleep: 2.2, quality: 'good' }
-        ],
-        steps: [
+        weightData: mockWeightData,
+        compositionData: prepareCompositionData(mockWeightData),
+        sleepData: mockSleepData,
+        stepsData: [
           { date: currentRange.startDate, steps: 8500 },
           { date: currentRange.endDate, steps: 8300 }
         ],
-        waist: [
+        waistData: [
           { date: currentRange.startDate, measurement: 85.2 }
         ],
         analytics: []
@@ -349,7 +341,8 @@ const Extension = ({ context, runServerless, sendAlert }) => {
         fat: { current: 15.9, previous: 16.2, change: -1.9 },
         totalSleep: { current: 7.6, previous: 7.2, change: 5.6 },
         deepSleep: { current: 2.1, previous: 2.0, change: 5.0 },
-        steps: { current: 8400, previous: 8200, change: 2.4 }
+        steps: { current: 8400, previous: 8200, change: 2.4 },
+        waist: { current: 85.2, previous: 85.8, change: -0.7 }
       };
       
       setCurrentData(mockData);
@@ -495,10 +488,29 @@ El historial muestra un patrón consistente de seguimiento de salud y bienestar.
     if (!data || !Array.isArray(data)) return [];
     
     return data.map(item => ({
-      date: item.date,
+      date: new Date(item.date).toISOString().split('T')[0], // Format as YYYY-MM-DD
       [field]: item[field],
       label: label
     })).filter(item => item[field] != null);
+  };
+
+  // Preparar datos específicos para gráficos de composición corporal
+  const prepareCompositionData = (weightData) => {
+    if (!weightData || !Array.isArray(weightData)) return [];
+    
+    const muscleData = weightData.map(item => ({
+      date: new Date(item.date).toISOString().split('T')[0],
+      value: item.muscle,
+      type: 'Masa Muscular'
+    })).filter(item => item.value != null);
+    
+    const fatData = weightData.map(item => ({
+      date: new Date(item.date).toISOString().split('T')[0],
+      value: item.fat,
+      type: 'Masa Grasa'
+    })).filter(item => item.value != null);
+    
+    return [...muscleData, ...fatData];
   };
 
   // Renderizar estado de carga
@@ -602,6 +614,15 @@ El historial muestra un patrón consistente de seguimiento de salud y bienestar.
               change={kpis.steps.change}
               unit="pasos"
             />
+            {kpis.waist && (
+              <KPICard
+                title="Cintura"
+                current={kpis.waist.current}
+                previous={kpis.waist.previous}
+                change={kpis.waist.change}
+                unit="cm"
+              />
+            )}
           </Flex>
         </div>
 
@@ -611,14 +632,12 @@ El historial muestra un patrón consistente de seguimiento de salud y bienestar.
           <Divider />
           
           {/* Gráfico de Peso */}
-          {currentData.weight && currentData.weight.length > 0 && (
+          {currentData.weightData && currentData.weightData.length > 0 && (
             <Tile>
-              <TileHeader>
+              <Flex direction="column" gap="small">
                 <Text format={{ fontWeight: 'bold' }}>Evolución del Peso</Text>
-              </TileHeader>
-              <TileBody>
                 <LineChart
-                  data={prepareChartData(currentData.weight, 'weight', 'Peso')}
+                  data={prepareChartData(currentData.weightData, 'weight', 'Peso')}
                   options={{
                     title: 'Tendencia de Peso Corporal',
                     showLegend: true,
@@ -630,19 +649,39 @@ El historial muestra un patrón consistente de seguimiento de salud y bienestar.
                     y: { field: 'weight', fieldType: 'linear', label: 'Peso (kg)' },
                   }}
                 />
-              </TileBody>
+              </Flex>
+            </Tile>
+          )}
+
+          {/* Gráfico de Composición Corporal */}
+          {currentData.compositionData && currentData.compositionData.length > 0 && (
+            <Tile>
+              <Flex direction="column" gap="small">
+                <Text format={{ fontWeight: 'bold' }}>Composición Corporal</Text>
+                <LineChart
+                  data={currentData.compositionData}
+                  options={{
+                    title: 'Masa Muscular vs Masa Grasa',
+                    showLegend: true,
+                    showDataLabels: false,
+                    showTooltips: true,
+                  }}
+                  axes={{
+                    x: { field: 'date', fieldType: 'datetime', label: 'Fecha' },
+                    y: { field: 'value', fieldType: 'linear', label: 'Valor (kg)' },
+                  }}
+                />
+              </Flex>
             </Tile>
           )}
 
           {/* Gráfico de Sueño */}
-          {currentData.sleep && currentData.sleep.length > 0 && (
+          {currentData.sleepData && currentData.sleepData.length > 0 && (
             <Tile>
-              <TileHeader>
+              <Flex direction="column" gap="small">
                 <Text format={{ fontWeight: 'bold' }}>Patrones de Sueño</Text>
-              </TileHeader>
-              <TileBody>
                 <BarChart
-                  data={prepareChartData(currentData.sleep, 'duration', 'Duración')}
+                  data={prepareChartData(currentData.sleepData, 'duration', 'Duración')}
                   options={{
                     title: 'Horas de Sueño por Día',
                     showLegend: true,
@@ -654,19 +693,39 @@ El historial muestra un patrón consistente de seguimiento de salud y bienestar.
                     y: { field: 'duration', fieldType: 'linear', label: 'Horas' },
                   }}
                 />
-              </TileBody>
+              </Flex>
+            </Tile>
+          )}
+
+          {/* Gráfico de Sueño Profundo */}
+          {currentData.sleepData && currentData.sleepData.length > 0 && (
+            <Tile>
+              <Flex direction="column" gap="small">
+                <Text format={{ fontWeight: 'bold' }}>Sueño Profundo</Text>
+                <BarChart
+                  data={prepareChartData(currentData.sleepData, 'deepSleep', 'Sueño Profundo')}
+                  options={{
+                    title: 'Horas de Sueño Profundo por Día',
+                    showLegend: true,
+                    showDataLabels: true,
+                    showTooltips: true,
+                  }}
+                  axes={{
+                    x: { field: 'date', fieldType: 'datetime', label: 'Fecha' },
+                    y: { field: 'deepSleep', fieldType: 'linear', label: 'Horas' },
+                  }}
+                />
+              </Flex>
             </Tile>
           )}
 
           {/* Gráfico de Actividad */}
-          {currentData.steps && currentData.steps.length > 0 && (
+          {currentData.stepsData && currentData.stepsData.length > 0 && (
             <Tile>
-              <TileHeader>
+              <Flex direction="column" gap="small">
                 <Text format={{ fontWeight: 'bold' }}>Actividad Física</Text>
-              </TileHeader>
-              <TileBody>
                 <LineChart
-                  data={prepareChartData(currentData.steps, 'steps', 'Pasos')}
+                  data={prepareChartData(currentData.stepsData, 'steps', 'Pasos')}
                   options={{
                     title: 'Pasos Diarios',
                     showLegend: true,
@@ -678,7 +737,29 @@ El historial muestra un patrón consistente de seguimiento de salud y bienestar.
                     y: { field: 'steps', fieldType: 'linear', label: 'Pasos' },
                   }}
                 />
-              </TileBody>
+              </Flex>
+            </Tile>
+          )}
+
+          {/* Gráfico de Cintura */}
+          {currentData.waistData && currentData.waistData.length > 0 && (
+            <Tile>
+              <Flex direction="column" gap="small">
+                <Text format={{ fontWeight: 'bold' }}>Medición de Cintura</Text>
+                <LineChart
+                  data={prepareChartData(currentData.waistData, 'measurement', 'Cintura')}
+                  options={{
+                    title: 'Evolución de la Medida de Cintura',
+                    showLegend: true,
+                    showDataLabels: false,
+                    showTooltips: true,
+                  }}
+                  axes={{
+                    x: { field: 'date', fieldType: 'datetime', label: 'Fecha' },
+                    y: { field: 'measurement', fieldType: 'linear', label: 'Centímetros' },
+                  }}
+                />
+              </Flex>
             </Tile>
           )}
         </div>
@@ -690,10 +771,8 @@ El historial muestra un patrón consistente de seguimiento de salud y bienestar.
           
           {/* Resúmenes Automáticos */}
           <Tile>
-            <TileHeader>
+            <Flex direction="column" gap="small">
               <Text>Resúmenes Médicos Automatizados</Text>
-            </TileHeader>
-            <TileBody>
               <Text format={{ fontSize: 'small', color: 'secondary' }}>
                 Genere resúmenes médicos automáticos basados en los datos de salud del paciente.
               </Text>
@@ -713,15 +792,13 @@ El historial muestra un patrón consistente de seguimiento de salud y bienestar.
                   Resumen General
                 </Button>
               </ButtonRow>
-            </TileBody>
+            </Flex>
           </Tile>
 
           {/* Chat Interactivo con IA */}
           <Tile>
-            <TileHeader>
+            <Flex direction="column" gap="small">
               <Text>Consulta Interactiva con IA</Text>
-            </TileHeader>
-            <TileBody>
               <Text format={{ fontSize: 'small', color: 'secondary' }}>
                 Haga preguntas específicas sobre los datos de salud del paciente y reciba respuestas personalizadas.
               </Text>
@@ -731,7 +808,7 @@ El historial muestra un patrón consistente de seguimiento de salud y bienestar.
               >
                 🤖 Abrir Chat con IA
               </Button>
-            </TileBody>
+            </Flex>
           </Tile>
         </div>
 
@@ -741,16 +818,16 @@ El historial muestra un patrón consistente de seguimiento de salud y bienestar.
           <Divider />
           <Flex gap="medium" wrap="wrap">
             <Text format={{ fontSize: 'small' }}>
-              📊 Registros de peso: {currentData.weight?.length || 0}
+              📊 Registros de peso: {currentData.weightData?.length || 0}
             </Text>
             <Text format={{ fontSize: 'small' }}>
-              😴 Registros de sueño: {currentData.sleep?.length || 0}
+              😴 Registros de sueño: {currentData.sleepData?.length || 0}
             </Text>
             <Text format={{ fontSize: 'small' }}>
-              🚶 Registros de actividad: {currentData.steps?.length || 0}
+              🚶 Registros de actividad: {currentData.stepsData?.length || 0}
             </Text>
             <Text format={{ fontSize: 'small' }}>
-              📏 Mediciones de cintura: {currentData.waist?.length || 0}
+              📏 Mediciones de cintura: {currentData.waistData?.length || 0}
             </Text>
             <Text format={{ fontSize: 'small' }}>
               🧪 Analíticas: {currentData.analytics?.length || 0}

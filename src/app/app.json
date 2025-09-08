@@ -25,7 +25,7 @@
           "file": "extensions/health-analytics.json"
         },
         {
-          "file": "extensions/HealthDashboard/health-dashboard.json"
+          "file": "extensions/health-dashboard.json"
         }
       ]
     }
