@@ -16,9 +16,9 @@ import {
 } from "@hubspot/ui-extensions";
 import React, { useCallback, useEffect, useState } from "react";
 
-// Nota: Los servicios se implementarán directamente en el componente para evitar problemas de importación en HubSpot
+// Los servicios van directo en el componente porque HubSpot a veces se pone raro con las importaciones externas
 
-// Define la extensión para ejecutar dentro del CRM de HubSpot
+// Aquí le decimos a HubSpot cómo ejecutar nuestra extensión dentro del CRM
 hubspot.extend(({ context, runServerlessFunction, actions }) => (
   <Extension
     context={context}
@@ -27,7 +27,7 @@ hubspot.extend(({ context, runServerlessFunction, actions }) => (
   />
 ));
 
-// Opciones de filtros predefinidos
+// Estos son los períodos que puede elegir el usuario en el dashboard
 const DATE_FILTER_OPTIONS = [
   { label: 'Últimos 15 días', value: 15 },
   { label: 'Últimos 30 días', value: 30 },
@@ -35,7 +35,7 @@ const DATE_FILTER_OPTIONS = [
   { label: 'Últimos 90 días', value: 90 },
 ];
 
-// Función para calcular fechas
+// Esta función calcula las fechas de inicio y fin según los días que elija el usuario
 const calculateDateRange = (days) => {
   const endDate = new Date();
   const startDate = new Date();
@@ -48,15 +48,15 @@ const calculateDateRange = (days) => {
   };
 };
 
-// Componente para mostrar un KPI individual
+// Este componente muestra cada indicador de salud (peso, músculo, grasa, etc.) con su valor y cambio
 const KPICard = ({ title, current, previous, change, unit, trend }) => {
   const getChangeColor = (change) => {
     if (change === null || change === undefined) return 'default';
     if (title.toLowerCase().includes('grasa')) {
-      // Para masa grasa, una disminución es positiva
+      // Con la grasa es al revés: que baje es bueno, que suba mucho es malo
       return change < 0 ? 'success' : change > 5 ? 'danger' : 'default';
     } else {
-      // Para otros KPIs, un aumento moderado es positivo
+      // Para el resto de KPIs, que suban un poco está bien, que bajen mucho está mal
       return change > 0 && change < 10 ? 'success' : change < -5 ? 'danger' : 'default';
     }
   };
@@ -93,7 +93,7 @@ const KPICard = ({ title, current, previous, change, unit, trend }) => {
   );
 };
 
-// Componente para el chat con IA
+// Este componente maneja todo el chat interactivo con la IA para consultas médicas
 const AIChatPanel = ({ isOpen, onClose, currentData, kpis, context, runServerless, sendAlert }) => {
   const [messages, setMessages] = useState([]);
   const [inputMessage, setInputMessage] = useState('');
@@ -115,7 +115,7 @@ const AIChatPanel = ({ isOpen, onClose, currentData, kpis, context, runServerles
           objectId: context.crm.objectId,
           message: inputMessage,
           healthData: { data: currentData, kpis: kpis },
-          chatHistory: messages.slice(-10) // Últimos 10 mensajes para contexto
+            chatHistory: messages.slice(-10) // Solo mandamos los últimos 10 mensajes para que la IA tenga contexto pero no se pase de tokens
         }
       });
 
@@ -211,7 +211,7 @@ const AIChatPanel = ({ isOpen, onClose, currentData, kpis, context, runServerles
   );
 };
 
-// Componente para el panel de resumen de IA
+// Este panel muestra los resúmenes automáticos que genera la IA
 const AISummaryPanel = ({ isOpen, onClose, summary, isLoading }) => {
   return (
     <Panel 
@@ -245,9 +245,9 @@ const AISummaryPanel = ({ isOpen, onClose, summary, isLoading }) => {
   );
 };
 
-// Componente principal de la extensión
+// El componente principal que junta todo el dashboard de salud
 const Extension = ({ context, runServerless, sendAlert }) => {
-  // Estados principales
+  // Estados básicos para manejar los datos y la carga
   const [isLoading, setIsLoading] = useState(false);
   const [selectedPeriod, setSelectedPeriod] = useState(30);
   const [currentData, setCurrentData] = useState(null);
@@ -255,36 +255,36 @@ const Extension = ({ context, runServerless, sendAlert }) => {
   const [kpis, setKpis] = useState(null);
   const [userId, setUserId] = useState('');
   
-  // Estados para resúmenes de IA
+  // Estados para manejar los resúmenes que genera la IA
   const [aiSummary, setAiSummary] = useState(null);
   const [showSummaryPanel, setShowSummaryPanel] = useState(false);
   const [isGeneratingSummary, setIsGeneratingSummary] = useState(false);
   
-  // Estados para chat de IA
+  // Estados para el chat interactivo con la IA
   const [showChatPanel, setShowChatPanel] = useState(false);
 
-  // Obtener userId del contexto
+  // Sacamos el ID del usuario desde el contexto de HubSpot
   useEffect(() => {
     if (context?.crm?.objectId) {
       setUserId(context.crm.objectId);
     }
   }, [context]);
 
-  // Función para cargar datos de salud usando las funciones serverless existentes
+  // Esta función trae todos los datos de salud del paciente usando nuestras funciones serverless
   const loadHealthData = useCallback(async (period) => {
     if (!userId) return;
     
     setIsLoading(true);
     try {
-      // Calcular rangos de fechas
+      // Calculamos qué fechas necesitamos para el período actual
       const currentRange = calculateDateRange(period);
       
-      // Calcular rangos de fechas para período actual y anterior
+      // Y también las fechas del período anterior para poder hacer comparaciones
       const previousRange = calculateDateRange(period * 2);
       const previousStart = previousRange.startDate;
       const previousEnd = currentRange.startDate;
 
-      // Usar la función serverless healthDashboard que ya existe
+      // Usamos nuestra función serverless que ya está hecha para traer los datos
       const response = await runServerless('healthDashboard', {
         propertiesToSend: ['hs_object_id'],
         parameters: {
@@ -301,7 +301,7 @@ const Extension = ({ context, runServerless, sendAlert }) => {
       if (response && response.success) {
         setCurrentData(response.data);
         setKpis(response.kpis);
-        // Para datos anteriores, podríamos hacer otra llamada, pero por simplicidad usaremos los KPIs calculados
+        // Los datos anteriores ya vienen calculados en los KPIs, así que no necesitamos otra llamada
         setPreviousData({}); // Los KPIs ya incluyen la comparación
       } else {
         throw new Error('No se pudieron cargar los datos');
@@ -310,7 +310,7 @@ const Extension = ({ context, runServerless, sendAlert }) => {
     } catch (error) {
       console.error('Error loading health data:', error);
       
-      // Usar datos mock para desarrollo con estructura correcta
+      // Si algo falla, usamos datos de ejemplo para que el equipo pueda seguir desarrollando
       const mockWeightData = [
         { date: currentRange.startDate, weight: 70.5, muscle: 35.2, fat: 15.8 },
         { date: currentRange.endDate, weight: 70.1, muscle: 35.0, fat: 16.0 }
@@ -358,14 +358,14 @@ const Extension = ({ context, runServerless, sendAlert }) => {
     }
   }, [userId, context, runServerless, sendAlert]);
 
-  // Cargar datos cuando cambie el período o userId
+  // Cada vez que el usuario cambie el período o cambie de paciente, volvemos a cargar los datos
   useEffect(() => {
     if (userId && selectedPeriod) {
       loadHealthData(selectedPeriod);
     }
   }, [userId, selectedPeriod, loadHealthData]);
 
-  // Función para generar resumen con IA
+  // Esta función le pide a la IA que genere un resumen médico de los datos
   const generateAISummary = async (summaryType) => {
     if (!currentData) {
       sendAlert({

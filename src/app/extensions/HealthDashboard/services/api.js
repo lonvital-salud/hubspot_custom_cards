@@ -1,12 +1,9 @@
-/**
- * Lonvital API Service
- * Wrapper para la API de Lonvital 
- */
+// Servicio para conectarnos con la API de Lonvital y traer los datos de salud
 
 const LONVITAL_API_BASE = 'https://api.lonvital.com/v1/health';
 const API_KEY = process.env.LONVITAL_API_KEY || 'mock-api-key';
 
-// Datos mock para desarrollo/fallback pruebas
+// Datos de ejemplo para cuando la API no esté disponible o estemos desarrollando
 const MOCK_DATA = {
   weight: [
     { date: '2024-01-01', weight: 70.5, muscle: 35.2, fat: 15.8 },
@@ -49,14 +46,12 @@ const MOCK_DATA = {
   ]
 };
 
-/**
- * Realiza una petición HTTP con manejo de errores
- */
+// Esta función hace las llamadas HTTP a la API con manejo de errores
 async function makeRequest(endpoint, params = {}) {
   try {
     const url = new URL(`${LONVITAL_API_BASE}${endpoint}`);
     
-    // Agregar parámetros de consulta
+    // Le agregamos todos los parámetros que necesita la API
     Object.keys(params).forEach(key => {
       if (params[key] !== undefined && params[key] !== null) {
         url.searchParams.append(key, params[key]);
@@ -83,9 +78,7 @@ async function makeRequest(endpoint, params = {}) {
   }
 }
 
-/**
- * Filtra datos por rango de fechas
- */
+// Filtra los datos para mostrar solo los que estén dentro del rango de fechas que pidieron
 function filterByDateRange(data, startDate, endDate, dateField = 'date') {
   if (!data || !Array.isArray(data)) return [];
   
@@ -98,9 +91,7 @@ function filterByDateRange(data, startDate, endDate, dateField = 'date') {
   });
 }
 
-/**
- * Obtiene datos de peso, masa muscular y masa grasa
- */
+// Trae todos los datos de peso y composición corporal del usuario
 export async function getWeightData(userId, startDate = null, endDate = null) {
   const params = { userId };
   if (startDate) params.from = startDate;
@@ -108,7 +99,7 @@ export async function getWeightData(userId, startDate = null, endDate = null) {
 
   let data = await makeRequest(`/weight/${userId}`, params);
   
-  // Fallback a datos mock
+  // Si la API falla, usamos datos de ejemplo
   if (!data) {
     console.log('Using mock weight data');
     data = { data: MOCK_DATA.weight };
@@ -123,9 +114,7 @@ export async function getWeightData(userId, startDate = null, endDate = null) {
   return weightData;
 }
 
-/**
- * Obtiene datos de sueño
- */
+// Trae los datos de sueño del usuario
 export async function getSleepData(userId, startDate = null, endDate = null) {
   const params = { userId };
   if (startDate) params.from = startDate;
@@ -133,7 +122,7 @@ export async function getSleepData(userId, startDate = null, endDate = null) {
 
   let data = await makeRequest(`/sleep/${userId}`, params);
   
-  // Fallback a datos mock
+  // Si la API falla, usamos datos de ejemplo
   if (!data) {
     console.log('Using mock sleep data');
     data = { data: MOCK_DATA.sleep };
@@ -148,9 +137,7 @@ export async function getSleepData(userId, startDate = null, endDate = null) {
   return sleepData;
 }
 
-/**
- * Obtiene datos de medición de cintura
- */
+// Trae las mediciones de cintura del usuario
 export async function getWaistData(userId, startDate = null, endDate = null) {
   const params = { userId };
   if (startDate) params.from = startDate;
@@ -158,7 +145,7 @@ export async function getWaistData(userId, startDate = null, endDate = null) {
 
   let data = await makeRequest(`/waist/${userId}`, params);
   
-  // Fallback a datos mock
+  // Si la API falla, usamos datos de ejemplo
   if (!data) {
     console.log('Using mock waist data');
     data = { data: MOCK_DATA.waist };
@@ -173,9 +160,7 @@ export async function getWaistData(userId, startDate = null, endDate = null) {
   return waistData;
 }
 
-/**
- * Obtiene listado de analíticas OCR
- */
+// Trae la lista de exámenes de laboratorio procesados con OCR
 export async function getAnalyticsData(userId, startDate = null, endDate = null) {
   const params = { userId };
   if (startDate) params.from = startDate;
@@ -183,7 +168,7 @@ export async function getAnalyticsData(userId, startDate = null, endDate = null)
 
   let data = await makeRequest(`/analytics/${userId}`, params);
   
-  // Fallback a datos mock
+  // Si la API falla, usamos datos de ejemplo
   if (!data) {
     console.log('Using mock analytics data');
     data = { data: MOCK_DATA.analytics };
@@ -198,13 +183,11 @@ export async function getAnalyticsData(userId, startDate = null, endDate = null)
   return analyticsData;
 }
 
-/**
- * Obtiene detalle de una analítica específica
- */
+// Trae los detalles completos de un examen de laboratorio específico
 export async function getAnalyticsDetail(userId, documentId) {
   let data = await makeRequest(`/analytics/${userId}/${documentId}`);
   
-  // Fallback a datos mock
+  // Si la API falla, usamos datos de ejemplo
   if (!data) {
     console.log('Using mock analytics detail data');
     const mockAnalytic = MOCK_DATA.analytics.find(a => a.id === documentId);
@@ -214,11 +197,9 @@ export async function getAnalyticsDetail(userId, documentId) {
   return data;
 }
 
-/**
- * Obtiene datos de pasos 
- */
+// Trae los datos de pasos diarios del usuario
 export async function getStepsData(userId, startDate = null, endDate = null) {
-  // Como no está en la API, siempre usamos datos mock
+  // Como aún no tenemos pasos en la API, siempre usamos datos de ejemplo
   console.log('Using mock steps data (not available in API)');
   
   let stepsData = MOCK_DATA.steps;
@@ -230,9 +211,7 @@ export async function getStepsData(userId, startDate = null, endDate = null) {
   return stepsData;
 }
 
-/**
- * Obtiene todos los datos de salud para un usuario en un rango de fechas
- */
+// Esta función trae todos los tipos de datos de salud de una vez para hacer más rápido el dashboard
 export async function getAllHealthData(userId, startDate = null, endDate = null) {
   try {
     const [weight, sleep, waist, analytics, steps] = await Promise.all([
@@ -262,9 +241,7 @@ export async function getAllHealthData(userId, startDate = null, endDate = null)
   }
 }
 
-/**
- * Calcula KPIs con comparación de períodos
- */
+// Calcula todos los indicadores de salud comparando el período actual con el anterior
 export function calculateKPIs(currentData, previousData) {
   const calculateAverage = (data, field) => {
     if (!data || data.length === 0) return null;
@@ -278,7 +255,7 @@ export function calculateKPIs(currentData, previousData) {
     return ((current - previous) / previous * 100);
   };
 
-  // KPIs de peso
+  // Calculamos los KPIs relacionados con el peso corporal
   const currentWeight = calculateAverage(currentData.weight, 'weight');
   const previousWeight = calculateAverage(previousData.weight, 'weight');
   
@@ -288,16 +265,16 @@ export function calculateKPIs(currentData, previousData) {
   const currentFat = calculateAverage(currentData.weight, 'fat');
   const previousFat = calculateAverage(previousData.weight, 'fat');
   
-  // KPIs de sueño
+  // Calculamos los KPIs relacionados con el sueño
   const currentTotalSleep = calculateAverage(currentData.sleep, 'duration');
   const previousTotalSleep = calculateAverage(previousData.sleep, 'duration');
   
-  // Deep sleep KPI (API no provee deepSleep, estimamos como 22% del sueño total)
+  // Para el sueño profundo, como la API no lo trae, lo estimamos como 22% del sueño total
   const estimateDeepSleepData = (sleepData) => {
     if (!sleepData || sleepData.length === 0) return [];
     return sleepData.map(item => ({
       ...item,
-      deepSleep: item.duration * 0.22 // Estimación: 22% del sueño total
+      deepSleep: item.duration * 0.22 // Usamos 22% porque es el promedio médico estable para sueño profundo
     }));
   };
   
@@ -307,11 +284,11 @@ export function calculateKPIs(currentData, previousData) {
   const currentDeepSleep = calculateAverage(currentSleepWithDeepSleep, 'deepSleep');
   const previousDeepSleep = calculateAverage(previousSleepWithDeepSleep, 'deepSleep');
   
-  // KPI de pasos
+  // Calculamos el KPI de actividad física (pasos)
   const currentSteps = calculateAverage(currentData.steps, 'steps');
   const previousSteps = calculateAverage(previousData.steps, 'steps');
   
-  // KPI de cintura (API usa campo 'waist' no 'measurement')
+  // Calculamos el KPI de cintura (cuidado que la API usa 'waist' no 'measurement')
   const currentWaist = calculateAverage(currentData.waist, 'waist');
   const previousWaist = calculateAverage(previousData.waist, 'waist');
 

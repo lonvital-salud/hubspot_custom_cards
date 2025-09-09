@@ -1,12 +1,11 @@
 const axios = require("axios");
 const hubspot = require('@hubspot/api-client');
 
-// OpenAI Chat integration
+// Integración con el chat de OpenAI para consultas médicas
 async function chatWithOpenAI(message, patientData, chatHistory = []) {
   const openAiApiKey = process.env['OPENAI_API_KEY'];
   
   if (!openAiApiKey || openAiApiKey === 'mock-api-key') {
-    // Return mock responses for development
     const mockResponses = {
       'peso': 'Basado en los datos disponibles, el paciente muestra una tendencia estable en el peso con ligeras variaciones. Se recomienda continuar con el monitoreo regular.',
       'sueño': 'Los patrones de sueño del paciente indican una duración promedio adecuada. La calidad del sueño parece estar dentro de parámetros normales.',
@@ -48,11 +47,11 @@ Responde siempre en español y limita tus respuestas a 200 palabras máximo.`;
       { role: "system", content: systemPrompt }
     ];
 
-    // Add chat history (limit to last 10 messages to avoid token limits)
+    // Agregamos el historial del chat pero solo los últimos 10 mensajes para no sobrepasar el límite de tokens
     const recentHistory = chatHistory.slice(-10);
     messages.push(...recentHistory);
 
-    // Add current message
+    // Y por último agregamos el mensaje actual del usuario
     messages.push({ role: "user", content: message });
 
     const response = await axios.post('https://api.openai.com/v1/chat/completions', {
@@ -72,7 +71,7 @@ Responde siempre en español y limita tus respuestas a 200 palabras máximo.`;
   } catch (error) {
     console.error('Error calling OpenAI Chat API:', error);
     
-    // Fallback response
+    // Si falla la llamada a OpenAI, damos una respuesta genérica
     return 'Lo siento, no puedo procesar tu consulta en este momento. Por favor, inténtalo de nuevo más tarde. Mientras tanto, puedes revisar los KPIs y gráficos disponibles en el dashboard.';
   }
 }
@@ -83,7 +82,7 @@ exports.main = async (context = {}) => {
       accessToken: process.env['PRIVATE_APP_ACCESS_TOKEN']
     });
 
-    // Get associated contact for context
+    // Necesitamos el contacto para darle contexto a la IA sobre el paciente
     const response = await hubspotClient.crm.objects.associationsApi.getAll(
       context.parameters.objectType,
       context.parameters.objectId,
@@ -96,7 +95,7 @@ exports.main = async (context = {}) => {
       ['firstname', 'lastname', 'email', 'historia_clinica']
     );
 
-    // Prepare patient data for AI context
+    // Preparamos toda la información del paciente para que la IA entienda el contexto
     const patientData = {
       contact: {
         name: `${contact.properties.firstname} ${contact.properties.lastname}`,
@@ -107,7 +106,7 @@ exports.main = async (context = {}) => {
       kpis: context.parameters.healthData?.kpis || {}
     };
 
-    // Get AI response
+    // Obtenemos la respuesta de la IA con todos los datos del paciente
     const aiReply = await chatWithOpenAI(
       context.parameters.message,
       patientData,

@@ -1,7 +1,7 @@
 const axios = require("axios");
 const hubspot = require('@hubspot/api-client');
 
-// Utility function to format date objects from HubSpot
+// Esta función nos sirve para transformar las fechas que nos llegan de HubSpot al formato que necesitamos
 function formatDateObj(dateObj) {
   if (!dateObj) return undefined;
   const year = dateObj.year;
@@ -10,7 +10,7 @@ function formatDateObj(dateObj) {
   return `${year}-${month}-${day}`;
 }
 
-// Calculate KPIs with period comparison
+// Aquí calculamos los KPIs comparando el período actual vs el anterior - bastante útil para ver tendencias
 function calculateKPIs(currentData, previousData) {
   const calculateAverage = (data, field) => {
     if (!data || data.length === 0) return null;
@@ -24,23 +24,23 @@ function calculateKPIs(currentData, previousData) {
     return ((current - previous) / previous * 100);
   };
 
-  // Weight KPI
+  // KPI de peso corporal
   const currentWeight = calculateAverage(currentData.weight, 'weight');
   const previousWeight = calculateAverage(previousData.weight, 'weight');
   
-  // Muscle mass KPI
+  // KPI de masa muscular
   const currentMuscle = calculateAverage(currentData.weight, 'muscle');
   const previousMuscle = calculateAverage(previousData.weight, 'muscle');
   
-  // Fat mass KPI
+  // KPI de masa grasa
   const currentFat = calculateAverage(currentData.weight, 'fat');
   const previousFat = calculateAverage(previousData.weight, 'fat');
   
-  // Total sleep KPI
+  // KPI de sueño total
   const currentTotalSleep = calculateAverage(currentData.sleep, 'duration');
   const previousTotalSleep = calculateAverage(previousData.sleep, 'duration');
   
-  // Deep sleep KPI (API no provee deepSleep, estimamos como 22% del sueño total)
+  // KPI de sueño profundo - como la API no nos da este dato, lo estimamos como 22% del sueño total (es un promedio médico aceptable)
   const estimateDeepSleep = (sleepData) => {
     if (!sleepData || sleepData.length === 0) return null;
     const validSleepData = sleepData.filter(item => item.duration != null && !isNaN(item.duration));
@@ -48,7 +48,7 @@ function calculateKPIs(currentData, previousData) {
     
     return validSleepData.map(item => ({
       ...item,
-      deepSleep: item.duration * 0.22 // Estimación: 22% del sueño total
+      deepSleep: item.duration * 0.22 // Usamos 22% porque es lo que recomiendan los estudios de sueño
     }));
   };
   
@@ -58,11 +58,11 @@ function calculateKPIs(currentData, previousData) {
   const currentDeepSleep = calculateAverage(currentSleepWithDeepSleep, 'deepSleep');
   const previousDeepSleep = calculateAverage(previousSleepWithDeepSleep, 'deepSleep');
   
-  // Steps KPI (use real data if available, otherwise mock data)
+  // KPI de pasos - si tenemos datos reales los usamos, sino ponemos unos valores de ejemplo
   const currentSteps = calculateAverage(currentData.steps, 'steps') || 8500;
   const previousSteps = calculateAverage(previousData.steps, 'steps') || 8200;
   
-  // Waist KPI (API usa campo 'waist' no 'measurement')
+  // KPI de cintura - ojo que la API usa el campo 'waist' no 'measurement'
   const currentWaist = calculateAverage(currentData.waist, 'waist');
   const previousWaist = calculateAverage(previousData.waist, 'waist');
 
@@ -105,7 +105,7 @@ function calculateKPIs(currentData, previousData) {
   };
 }
 
-// Format data for charts
+// Esta función prepara los datos para que se vean bien en los gráficos del frontend
 function formatChartData(data) {
   const formatWeight = (weightData) => {
     return weightData.map(item => ({
@@ -132,9 +132,9 @@ function formatChartData(data) {
 
   const formatSleep = (sleepData) => {
     return sleepData.map(item => ({
-      date: new Date(item.datetime).toISOString(), // API usa 'datetime'
+      date: new Date(item.datetime).toISOString(), // Cuidado que aquí la API usa 'datetime' en vez de 'date'
       duration: item.duration,
-      deepSleep: item.duration * 0.22, // Estimación del sueño profundo
+      deepSleep: item.duration * 0.22, // Otra vez la estimación del sueño profundo
       quality: item.quality
     })).sort((a, b) => new Date(a.date) - new Date(b.date));
   };
@@ -148,8 +148,8 @@ function formatChartData(data) {
 
   const formatWaist = (waistData) => {
     return waistData.map(item => ({
-      date: new Date(item.measurementTimeStamp).toISOString(), // API usa 'measurementTimeStamp'
-      measurement: item.waist // API usa 'waist' no 'measurement'
+      date: new Date(item.measurementTimeStamp).toISOString(), // Para cintura, la API usa 'measurementTimeStamp'
+      measurement: item.waist // Y también usa 'waist' en lugar de 'measurement' - hay que estar atentos
     })).sort((a, b) => new Date(a.date) - new Date(b.date));
   };
 
@@ -164,7 +164,7 @@ function formatChartData(data) {
 
 exports.main = async (context = {}) => {
   try {
-    // Use Lonvital API instead of Firebase API
+    // Ahora usamos la API 
     const lonvitalApiUrl = process.env['LONVITAL_API_URL'] || 'https://api.lonvital.com/v1/health';
     const lonvitalApiKey = process.env['LONVITAL_API_KEY'];
 
@@ -172,7 +172,7 @@ exports.main = async (context = {}) => {
       accessToken: process.env['PRIVATE_APP_ACCESS_TOKEN']
     });
 
-    // Get associated contact
+    // Primero necesitamos obtener el contacto asociado desde HubSpot
     const response = await hubspotClient.crm.objects.associationsApi.getAll(
       context.parameters.objectType,
       context.parameters.objectId,
@@ -185,11 +185,9 @@ exports.main = async (context = {}) => {
       ['firstname', 'lastname', 'email', 'historia_clinica']
     );
 
-    // Use email or historia_clinica as userId
     let userId = contact.properties.email || contact.properties.historia_clinica;
     let useHistoriaClinnica = false;
     
-    // Si no tiene email pero sí tiene historia clínica, usar búsqueda por HC
     if (!contact.properties.email && contact.properties.historia_clinica) {
       userId = contact.properties.historia_clinica;
       useHistoriaClinnica = true;
@@ -204,13 +202,13 @@ exports.main = async (context = {}) => {
     const previousStart = context.parameters.previousStart;
     const previousEnd = context.parameters.previousEnd;
 
-    // Headers for Lonvital API
+    // Estos son los headers que necesita la API de Lonvital para autenticarnos
     const headers = {
       'x-api-key': lonvitalApiKey,
       'Content-Type': 'application/json'
     };
 
-    // Prepare base params for API calls
+    // Parámetros base para todas las llamadas a la API - así evitamos repetir código
     const getBaseParams = (from, to) => {
       const params = { from, to, pageSize: 100 };
       if (useHistoriaClinnica) {
@@ -219,7 +217,7 @@ exports.main = async (context = {}) => {
       return params;
     };
 
-    // Fetch current period data using new Lonvital API
+    // Traemos los datos del período actual usando la nueva API de Lonvital
     const currentDataPromises = [
       axios.get(`${lonvitalApiUrl}/weight/${userId}`, {
         params: getBaseParams(currentStart, currentEnd),
@@ -242,7 +240,7 @@ exports.main = async (context = {}) => {
       }).catch(() => ({ data: { data: [] } }))
     ];
 
-    // Fetch previous period data using new Lonvital API
+    // Y ahora los datos del período anterior para poder hacer comparaciones
     const previousDataPromises = [
       axios.get(`${lonvitalApiUrl}/weight/${userId}`, {
         params: getBaseParams(previousStart, previousEnd),
@@ -265,19 +263,19 @@ exports.main = async (context = {}) => {
       }).catch(() => ({ data: { data: [] } }))
     ];
 
-    // Execute all API calls
+    // Ejecutamos todas las llamadas a la API en paralelo para que sea más rápido
     const [currentResults, previousResults] = await Promise.all([
       Promise.all(currentDataPromises),
       Promise.all(previousDataPromises)
     ]);
 
-    // Structure the data for new API format
+    // Organizamos los datos según el formato que necesita nuestra API
     const currentData = {
       weight: currentResults[0].data.data || [],
       sleep: currentResults[1].data.data || [],
       waist: currentResults[2].data.data || [],
       analytics: currentResults[3].data.data || [],
-      steps: [] // Mock data as steps are not in API yet
+      steps: [] // Datos de ejemplo porque aún no tenemos steps en la API
     };
 
     const previousData = {
@@ -285,13 +283,13 @@ exports.main = async (context = {}) => {
       sleep: previousResults[1].data.data || [],
       waist: previousResults[2].data.data || [],
       analytics: previousResults[3].data.data || [],
-      steps: [] // Mock data as steps are not in API yet
+      steps: [] // Datos de ejemplo porque aún no tenemos steps en la API
     };
 
-    // Calculate KPIs
+    // Calculamos todos los KPIs con la data que trajimos
     const kpis = calculateKPIs(currentData, previousData);
 
-    // Format chart data
+    // Formateamos los datos para que se vean bien en los gráficos
     const chartData = formatChartData(currentData);
 
     return {
@@ -308,7 +306,7 @@ exports.main = async (context = {}) => {
   } catch (error) {
     console.error('Error in health dashboard:', error);
     
-    // Return mock data for development
+    // Si algo falla, devolvemos datos de ejemplo para que el equipo pueda seguir trabajando
     return {
       success: false,
       error: error.message,

@@ -1,12 +1,12 @@
 const axios = require("axios");
 const hubspot = require('@hubspot/api-client');
 
-// OpenAI API integration
+// Integración con OpenAI para generar resúmenes médicos automáticos
 async function generateSummaryWithOpenAI(patientData, summaryType, period = null) {
   const openAiApiKey = process.env['OPENAI_API_KEY'];
   
   if (!openAiApiKey || openAiApiKey === 'mock-api-key') {
-    // Return mock summary for development
+    // Si no tenemos API key, devolvemos un resumen de ejemplo para que el equipo pueda probar
     return summaryType === 'current' 
       ? `Resumen del período de ${period} días: El paciente muestra una tendencia positiva en su composición corporal, con una reducción del 1.8% en el peso corporal y un aumento del 1.1% en masa muscular. La calidad del sueño ha mejorado un 4.2%, manteniendo un promedio de 7.5 horas por noche. Se recomienda continuar con el plan actual.`
       : `Resumen general del historial: El paciente ha mostrado una evolución consistente en sus métricas de salud a lo largo del tiempo. Los datos indican una mejora gradual en la composición corporal y patrones de sueño estables. Se sugiere mantener el seguimiento regular y ajustar el plan según las tendencias observadas.`;
@@ -56,7 +56,7 @@ Por favor, proporciona un análisis profesional con recomendaciones específicas
   } catch (error) {
     console.error('Error calling OpenAI API:', error);
     
-    // Fallback to mock summary
+    // Si algo falla con OpenAI, usamos el resumen de ejemplo
     return summaryType === 'current' 
       ? `Resumen del período de ${period} días: Basado en los datos disponibles, se observan tendencias en las métricas de salud del paciente. Se recomienda continuar con el monitoreo regular y consultar con el profesional de salud para ajustes en el plan de tratamiento.`
       : `Resumen general: El historial del paciente muestra datos de seguimiento de salud. Se sugiere mantener el registro continuo de métricas y realizar evaluaciones periódicas para optimizar el plan de salud.`;
@@ -69,7 +69,7 @@ exports.main = async (context = {}) => {
       accessToken: process.env['PRIVATE_APP_ACCESS_TOKEN']
     });
 
-    // Get associated contact for additional context
+    // Obtenemos el contacto para tener más contexto sobre el paciente
     const response = await hubspotClient.crm.objects.associationsApi.getAll(
       context.parameters.objectType,
       context.parameters.objectId,
@@ -82,7 +82,7 @@ exports.main = async (context = {}) => {
       ['firstname', 'lastname', 'email', 'historia_clinica']
     );
 
-    // Prepare patient data for AI analysis
+    // Preparamos todos los datos del paciente para que la IA los pueda analizar bien
     const patientData = {
       contact: {
         name: `${contact.properties.firstname} ${contact.properties.lastname}`,
@@ -94,7 +94,7 @@ exports.main = async (context = {}) => {
       period: context.parameters.period
     };
 
-    // Generate AI summary
+    // Generamos el resumen con IA usando todos los datos que preparamos
     const summary = await generateSummaryWithOpenAI(
       patientData,
       context.parameters.summaryType,

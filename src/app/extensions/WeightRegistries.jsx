@@ -1,19 +1,21 @@
-import React, { useEffect, useState } from "react";
 import {
-  Text,
-  EmptyState,
-  Flex,
-  LoadingSpinner,
-  hubspot,
-  Table,
-  TableHead,
-  TableRow, TableHeader, TableBody, TableCell, TableFooter,
-  LineChart,
-  DateInput,
-  Button
+    Button,
+    DateInput,
+    EmptyState,
+    Flex,
+    hubspot,
+    LineChart,
+    LoadingSpinner,
+    Table,
+    TableBody, TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+    Text
 } from "@hubspot/ui-extensions";
+import React, { useEffect, useState } from "react";
 
-// Define the extension to be run within the Hubspot CRM
+// Le decimos a HubSpot cómo ejecutar esta extensión dentro del CRM
 hubspot.extend(({ context, runServerlessFunction, actions }) => (
   <Extension
     context={context}
@@ -22,7 +24,7 @@ hubspot.extend(({ context, runServerlessFunction, actions }) => (
   />
 ));
 
-// Define the Extension component, taking in runServerless, context, & sendAlert as props
+// El componente principal que maneja los registros de peso y composición corporal
 const Extension = ({ context, runServerless, sendAlert }) => {
   const [text, setText] = useState("");
 
@@ -41,7 +43,7 @@ const Extension = ({ context, runServerless, sendAlert }) => {
   const [filterApplied, setFilterApplied] = useState(false);
 
   useEffect(() => {
-    // Fetch data from the serverless function
+    // Traemos los datos de peso desde nuestra función serverless
     const fetchData = async () => {
       setIsComponentLoaded(true);
       setIsLoading(true);
@@ -62,11 +64,11 @@ const Extension = ({ context, runServerless, sendAlert }) => {
           setTotalPages(Math.ceil(response.recordsTotal / length));
           setIsLoading(false);
           return response.data;
-          // handle response, which is the value returned from the function on success
+          // Manejamos la respuesta exitosa de la función
         })
         .catch((error) => {
           console.log(error);
-          // handle error, which is an Error object if the function failed to execute
+          // Si algo falla, lo registramos en el log
         });
 
       setData(response);
@@ -81,10 +83,10 @@ const Extension = ({ context, runServerless, sendAlert }) => {
       const chartData = data.map(({ date, weight }) => ({
         date: new Date(date._seconds * 1000).toISOString().replace(/T/, ' ').replace(/\..+/, ''),
         weight: weight
-      })).sort((a, b) => // Sort descencing by date
+      })).sort((a, b) => // Ordenamos por fecha descendente (más reciente primero)
         new Date(b.date) - new Date(a.date)
       );
-      // Set the chart data
+      // Guardamos los datos formateados para el gráfico
       // console.log("chartData", chartData);
       setDataChart(chartData);
       console.log("chartData", chartData);
@@ -92,8 +94,8 @@ const Extension = ({ context, runServerless, sendAlert }) => {
     }
   }, [data])
 
-  // Call serverless function to execute with parameters.
-  // The `myFunc` function name is configured inside `serverless.json`
+  // Esta función llama a nuestra función serverless con los parámetros necesarios
+  // El nombre de la función está configurado en el archivo serverless.json
   const handleClick = async () => {
     const { response } = await runServerless({ name: "weightRegistries", parameters: { text: text } });
     sendAlert({ message: response });
@@ -124,8 +126,8 @@ const Extension = ({ context, runServerless, sendAlert }) => {
           <Button
             type="primary"
             onClick={() => {
-              setPage(1); // Reinicia la paginación al aplicar filtro
-              setFilterApplied((prev) => !prev); // Fuerza el useEffect
+              setPage(1); // Volvemos a la primera página cuando aplicamos un filtro nuevo
+              setFilterApplied((prev) => !prev); // Esto fuerza el useEffect para que recargue los datos
             }}
             disabled={!startDate && !endDate}
           >
@@ -174,8 +176,8 @@ const Extension = ({ context, runServerless, sendAlert }) => {
           <Button
             type="primary"
             onClick={() => {
-              setPage(1); // Reinicia la paginación al aplicar filtro
-              setFilterApplied((prev) => !prev); // Fuerza el useEffect
+              setPage(1); // Volvemos a la primera página cuando aplicamos un filtro nuevo
+              setFilterApplied((prev) => !prev); // Esto fuerza el useEffect para que recargue los datos
             }}
             disabled={!startDate && !endDate}
           >

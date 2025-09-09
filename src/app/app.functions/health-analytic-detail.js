@@ -2,10 +2,11 @@ const axios = require("axios");
 const hubspot = require('@hubspot/api-client');
 
 exports.main = async (context = {}) => {
-
+  // Esta función trae los detalles de una analítica específica
   const firebaseApiUrl = process.env['LONVITAL_FIREBASE_API_URL'];
   const firebaseApiToken = process.env['LONVITAL_FIREBASE_API_TOKEN'];
 
+  // Parámetros que necesita la API para traer el detalle
   const params = {
     key: firebaseApiToken,
     userId: context.parameters.userId,

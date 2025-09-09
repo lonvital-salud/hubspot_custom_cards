@@ -1,21 +1,16 @@
-/**
- * OpenAI AI Service
- * Servicio para generar resúmenes médicos usando OpenAI GPT-4
- */
+// Servicio de IA para generar resúmenes médicos automáticos usando OpenAI
 
-/**
- * Genera un resumen médico usando OpenAI
- */
+// Esta función le pide a OpenAI que genere un resumen médico basado en los datos del paciente
 export async function generateMedicalSummary(patientData, summaryType = 'current', dateRange = null) {
   try {
-    // Preparar el contexto del paciente
+    // Primero preparamos toda la información del paciente para la IA
     const context = preparePatientContext(patientData, summaryType, dateRange);
     
-    // Configurar el prompt según el tipo de resumen
+    // Configuramos las instrucciones para la IA según qué tipo de resumen queremos
     const systemPrompt = getSystemPrompt(summaryType);
     const userPrompt = getUserPrompt(context, summaryType, dateRange);
 
-    // Llamada a la función serverless que maneja OpenAI
+    // Llamamos a nuestra función serverless que se encarga de hablar con OpenAI
     const response = await hubspot.serverless('generateAISummary', {
       propertiesToSend: ['hs_object_id'],
       parameters: {
@@ -49,9 +44,7 @@ export async function generateMedicalSummary(patientData, summaryType = 'current
   }
 }
 
-/**
- * Prepara el contexto del paciente para el análisis de IA
- */
+// Aquí organizamos todos los datos del paciente para que la IA los entienda mejor
 function preparePatientContext(patientData, summaryType, dateRange) {
   const context = {
     dateRange: dateRange,
