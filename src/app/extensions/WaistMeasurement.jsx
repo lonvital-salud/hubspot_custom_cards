@@ -1,19 +1,21 @@
-import React, { useEffect, useState } from "react";
 import {
-  Text,
-  EmptyState,
-  Flex,
-  LoadingSpinner,
-  hubspot,
-  Table,
-  TableHead,
-  TableRow, TableHeader, TableBody, TableCell, TableFooter,
-  LineChart,
-  DateInput,
-  Button
+    Button,
+    DateInput,
+    EmptyState,
+    Flex,
+    hubspot,
+    LineChart,
+    LoadingSpinner,
+    Table,
+    TableBody, TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+    Text
 } from "@hubspot/ui-extensions";
+import React, { useEffect, useState } from "react";
 
-// Define the extension to be run within the Hubspot CRM
+// Le decimos a HubSpot cómo ejecutar esta extensión dentro del CRM
 hubspot.extend(({ context, runServerlessFunction, actions }) => (
   <Extension
     context={context}
@@ -22,7 +24,7 @@ hubspot.extend(({ context, runServerlessFunction, actions }) => (
   />
 ));
 
-// Define the Extension component, taking in runServerless, context, & sendAlert as props
+// El componente principal que maneja las mediciones de cintura
 const Extension = ({ context, runServerless, sendAlert }) => {
   const [text, setText] = useState("");
 
@@ -41,7 +43,7 @@ const Extension = ({ context, runServerless, sendAlert }) => {
   const [filterApplied, setFilterApplied] = useState(false);
 
   useEffect(() => {
-    // Fetch data from the serverless function
+    // Traemos los datos de mediciones de cintura desde nuestra función serverless
     const fetchData = async () => {
       setIsComponentLoaded(true);
       setIsLoading(true);
@@ -62,11 +64,11 @@ const Extension = ({ context, runServerless, sendAlert }) => {
           setTotalPages(Math.ceil(response.recordsTotal / length));
           setIsLoading(false);
           return response.data;
-          // handle response, which is the value returned from the function on success
+          // Manejamos la respuesta exitosa de la función
         })
         .catch((error) => {
           console.log(error);
-          // handle error, which is an Error object if the function failed to execute
+          // Si algo falla, lo registramos en el log
         });
 
       //console.log("response", response);
@@ -82,16 +84,16 @@ const Extension = ({ context, runServerless, sendAlert }) => {
     if (data && data.length) {
       const chartData = data.map(({ ica, measurementTimeStamp, measurementWaistCm }) => {
         const fecha = new Date(measurementTimeStamp._seconds * 1000).toISOString().replace(/T/, ' ').replace(/\..+/, '');
-        const fechaSinSegundos = fecha.split(' ')[1].split(':')[0] + ':' + fecha.split(' ')[1].split(':')[1];
+        const fechaSinSegundos = fecha.split(' ')[1].split(':')[0] + ':' + fecha.split(' ')[1].split(':')[1]; // Le quitamos los segundos para que se vea más limpio
         return {
           waistMeasurement: measurementWaistCm,
           label: `${measurementWaistCm} (${ica})`,
-          date: `${fecha.split(' ')[0]} ${fechaSinSegundos}`, // new Date(measurementTimeStamp._seconds * 1000).toISOString().replace(/T/, ' ').replace(/\..+/, ''), // quita los segundos y microsegundos
+          date: `${fecha.split(' ')[0]} ${fechaSinSegundos}`, // Formateamos la fecha y hora sin segundos ni microsegundos
         }
-      }).sort((a, b) => // Sort descencing by date
+      }).sort((a, b) => // Ordenamos por fecha descendente (más reciente primero)
         new Date(b.date) - new Date(a.date)
       );
-      // Set the chart data
+      // Guardamos los datos formateados para el gráfico
       // console.log("chartData", chartData);
       setDataChart(chartData);
       setIsLoadedChart(true);
@@ -123,8 +125,8 @@ const Extension = ({ context, runServerless, sendAlert }) => {
           <Button
             type="primary"
             onClick={() => {
-              setPage(1); // Reinicia la paginación al aplicar filtro
-              setFilterApplied((prev) => !prev); // Fuerza el useEffect
+              setPage(1); // Volvemos a la primera página cuando aplicamos un filtro nuevo
+              setFilterApplied((prev) => !prev); // Esto fuerza el useEffect para que recargue los datos
             }}
             disabled={!startDate && !endDate}
           >
@@ -172,8 +174,8 @@ const Extension = ({ context, runServerless, sendAlert }) => {
           <Button
             type="primary"
             onClick={() => {
-              setPage(1); // Reinicia la paginación al aplicar filtro
-              setFilterApplied((prev) => !prev); // Fuerza el useEffect
+              setPage(1); // Volvemos a la primera página cuando aplicamos un filtro nuevo
+              setFilterApplied((prev) => !prev); // Esto fuerza el useEffect para que recargue los datos
             }}
             disabled={!startDate && !endDate}
           >

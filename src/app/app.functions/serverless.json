@@ -3,36 +3,55 @@
     "weightRegistries": {
       "file": "weight-registries.js",
       "secrets": [
-        "LONVITAL_FIREBASE_API_URL",
-        "LONVITAL_FIREBASE_API_TOKEN"
+        "LONVITAL_API_URL",
+        "LONVITAL_API_KEY"
       ]
     },
     "sleepRegistries": {
       "file": "sleep-registries.js",
       "secrets": [
-        "LONVITAL_FIREBASE_API_URL",
-        "LONVITAL_FIREBASE_API_TOKEN"
+        "LONVITAL_API_URL",
+        "LONVITAL_API_KEY"
       ]
     },
     "waistMeasurement": {
       "file": "waist-measurement.js",
       "secrets": [
-        "LONVITAL_FIREBASE_API_URL",
-        "LONVITAL_FIREBASE_API_TOKEN"
+        "LONVITAL_API_URL",
+        "LONVITAL_API_KEY"
       ]
     },
     "healthAnalytics": {
       "file": "health-analytics.js",
       "secrets": [
-        "LONVITAL_FIREBASE_API_URL",
-        "LONVITAL_FIREBASE_API_TOKEN"
+        "LONVITAL_API_URL",
+        "LONVITAL_API_KEY"
       ]
     },
     "healthAnalyticDetail": {
       "file": "health-analytic-detail.js",
       "secrets": [
-        "LONVITAL_FIREBASE_API_URL",
-        "LONVITAL_FIREBASE_API_TOKEN"
+        "LONVITAL_API_URL",
+        "LONVITAL_API_KEY"
+      ]
+    },
+    "healthDashboard": {
+      "file": "health-dashboard.js",
+      "secrets": [
+        "LONVITAL_API_URL",
+        "LONVITAL_API_KEY"
+      ]
+    },
+    "generateAISummary": {
+      "file": "generate-ai-summary.js",
+      "secrets": [
+        "OPENAI_API_KEY"
+      ]
+    },
+    "aiChat": {
+      "file": "ai-chat.js",
+      "secrets": [
+        "OPENAI_API_KEY"
       ]
     }
   }

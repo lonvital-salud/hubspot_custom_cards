@@ -25,12 +25,9 @@
           "file": "extensions/health-analytics.json"
         },
         {
-          "file": "extensions/health-contact-kpis.json"
+          "file": "extensions/health-dashboard.json"
         }
       ]
     }
-  },
-  "webhooks": {
-    "file": "./webhooks/webhooks.json"
   }
 }

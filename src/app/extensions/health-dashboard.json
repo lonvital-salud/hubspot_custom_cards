@@ -1,0 +1,17 @@
+{
+  "type": "crm-card",
+  "data": {
+    "title": "Dashboard General de Salud",
+    "uid": "health_dashboard_card",
+    "location": "crm.record.tab",
+    "module": {
+      "file": "HealthDashboard.jsx"
+    },
+    "objectTypes": [
+      {
+        "name": "p_hc"
+      }
+    ]
+  }
+}
+

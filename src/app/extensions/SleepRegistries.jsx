@@ -1,20 +1,20 @@
-import React, { useEffect, useState } from "react";
 import {
-  Divider,
-  Link,
-  Button,
-  Text,
-  EmptyState,
-  Flex,
-  LoadingSpinner,
-  hubspot,
-  Table,
-  TableHead,
-  TableRow, TableHeader, TableBody, TableCell, TableFooter,
-  DateInput
+    Button,
+    DateInput,
+    EmptyState,
+    Flex,
+    hubspot,
+    LoadingSpinner,
+    Table,
+    TableBody, TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+    Text
 } from "@hubspot/ui-extensions";
+import React, { useEffect, useState } from "react";
 
-// Define the extension to be run within the Hubspot CRM
+// Le decimos a HubSpot cómo ejecutar esta extensión dentro del CRM
 hubspot.extend(({ context, runServerlessFunction, actions }) => (
   <Extension
     context={context}
@@ -23,7 +23,7 @@ hubspot.extend(({ context, runServerlessFunction, actions }) => (
   />
 ));
 
-// Define the Extension component, taking in runServerless, context, & sendAlert as props
+// El componente principal que maneja la tabla de registros de sueño
 const Extension = ({ context, runServerless, sendAlert }) => {
   const [text, setText] = useState("");
 
@@ -40,7 +40,7 @@ const Extension = ({ context, runServerless, sendAlert }) => {
 
   useEffect(() => {
 
-    // Fetch data from the serverless function
+    // Traemos los datos de sueño desde nuestra función serverless
     const fetchData = async () => {
       setIsLoading(true);
       const response = await hubspot
@@ -91,8 +91,8 @@ const Extension = ({ context, runServerless, sendAlert }) => {
           <Button
             type="primary"
             onClick={() => {
-              setPage(1); // Reinicia la paginación al aplicar filtro
-              setFilterApplied((prev) => !prev); // Fuerza el useEffect
+              setPage(1); // Volvemos a la primera página cuando aplicamos un filtro nuevo
+              setFilterApplied((prev) => !prev); // Esto fuerza el useEffect para que recargue los datos
             }}
             disabled={!startDate && !endDate}
           >
@@ -123,10 +123,10 @@ const Extension = ({ context, runServerless, sendAlert }) => {
   const formatDate = function (date) {
     const newDate = new Date(date._seconds * 1000);
     var year = newDate.getFullYear();
-    var month = newDate.getMonth() + 1; // Los meses empiezan en 0
+    var month = newDate.getMonth() + 1; // Los meses en JS van de 0-11, por eso sumamos 1
     var day = newDate.getDate();
 
-    // Asegurarse de que el mes y el día tengan dos dígitos
+    // Le agregamos un cero adelante si es necesario para que siempre tenga 2 dígitos
     if (month < 10) {
       month = '0' + month;
     }
@@ -158,8 +158,8 @@ const Extension = ({ context, runServerless, sendAlert }) => {
           <Button
             type="primary"
             onClick={() => {
-              setPage(1); // Reinicia la paginación al aplicar filtro
-              setFilterApplied((prev) => !prev); // Fuerza el useEffect
+              setPage(1); // Volvemos a la primera página cuando aplicamos un filtro nuevo
+              setFilterApplied((prev) => !prev); // Esto fuerza el useEffect para que recargue los datos
             }}
             disabled={!startDate && !endDate}
           >

@@ -4,7 +4,7 @@ const hubspot = require('@hubspot/api-client');
 function formatDateObj(dateObj) {
   if (!dateObj) return undefined;
   const year = dateObj.year;
-  // Sumar 1 al mes si viene en base 0, pero según tu ejemplo parece que ya es base 1
+  // Los meses en JavaScript van de 0-11, pero parece que aquí ya vienen en base 1, así que sumamos 1 por las dudas
   const month = String(dateObj.month + 1).padStart(2, '0');
   const day = String(dateObj.date).padStart(2, '0');
   return `${year}-${month}-${day}`;

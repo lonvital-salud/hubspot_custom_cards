@@ -4,7 +4,7 @@ const hubspot = require('@hubspot/api-client');
 function formatDateObj(dateObj) {
   if (!dateObj) return undefined;
   const year = dateObj.year;
-  // Sumar 1 al mes si viene en base 0, pero según tu ejemplo parece que ya es base 1
+  // Los meses en JavaScript van de 0-11, pero parece que aquí ya vienen en base 1, así que sumamos 1 por las dudas
   const month = String(dateObj.month + 1).padStart(2, '0');
   const day = String(dateObj.date).padStart(2, '0');
   return `${year}-${month}-${day}`;
@@ -19,7 +19,7 @@ exports.main = async (context = {}) => {
     accessToken: process.env['PRIVATE_APP_ACCESS_TOKEN']
   });
 
-  // Obtiene contacto de la HC
+  // Primero conseguimos el contacto de la Historia Clínica
   const response = await hubspotClient.crm.objects.associationsApi.getAll(
     context.parameters.objectType,
     context.parameters.objectId,
@@ -41,10 +41,10 @@ exports.main = async (context = {}) => {
   const startDate = formatDateObj(context.parameters.startDate);
   const endDate = formatDateObj(context.parameters.endDate);
   if (startDate) {
-    params.from = `${startDate}T00:00:00.000Z`; // Agregar 'T00:00:00.000Z' al final de la fecha startDate;
+    params.from = `${startDate}T00:00:00.000Z`; // Le agregamos la hora de inicio del día
   }
   if (endDate) {
-    params.to = `${endDate}T23:59:59.000Z`; // Agregar 'T23:59:59.000Z' al final de la fecha endDate;
+    params.to = `${endDate}T23:59:59.000Z`; // Y la hora de fin del día para incluir todo el último día
   }
 
   return await axios.get(`${firebaseApiUrl}/firebase_get-health-analytics`, {
