@@ -1,18 +1,18 @@
 import {
-    BarChart,
-    Button,
-    ButtonRow,
-    Divider,
-    EmptyState,
-    Flex,
-    hubspot,
-    Input,
-    LineChart,
-    LoadingSpinner,
-    Panel,
-    Select,
-    Text,
-    Tile
+  BarChart,
+  Button,
+  ButtonRow,
+  Divider,
+  EmptyState,
+  Flex,
+  hubspot,
+  Input,
+  LineChart,
+  LoadingSpinner,
+  Panel,
+  Select,
+  Text,
+  Tile
 } from "@hubspot/ui-extensions";
 import React, { useCallback, useEffect, useState } from "react";
 
@@ -40,7 +40,7 @@ const calculateDateRange = (days) => {
   const endDate = new Date();
   const startDate = new Date();
   startDate.setDate(endDate.getDate() - days);
-  
+
   return {
     startDate: startDate.toISOString().split('T')[0],
     endDate: endDate.toISOString().split('T')[0],
@@ -115,15 +115,15 @@ const AIChatPanel = ({ isOpen, onClose, currentData, kpis, context, runServerles
           objectId: context.crm.objectId,
           message: inputMessage,
           healthData: { data: currentData, kpis: kpis },
-            chatHistory: messages.slice(-10) // Solo mandamos los últimos 10 mensajes para que la IA tenga contexto pero no se pase de tokens
+          chatHistory: messages.slice(-10) // Solo mandamos los últimos 10 mensajes para que la IA tenga contexto pero no se pase de tokens
         }
       });
 
       if (response && response.success) {
-        const aiMessage = { 
-          role: 'assistant', 
-          content: response.reply, 
-          timestamp: new Date().toISOString() 
+        const aiMessage = {
+          role: 'assistant',
+          content: response.reply,
+          timestamp: new Date().toISOString()
         };
         setMessages(prev => [...prev, aiMessage]);
       } else {
@@ -131,13 +131,13 @@ const AIChatPanel = ({ isOpen, onClose, currentData, kpis, context, runServerles
       }
     } catch (error) {
       console.error('Error in AI chat:', error);
-      const errorMessage = { 
-        role: 'assistant', 
+      const errorMessage = {
+        role: 'assistant',
         content: 'Lo siento, no pude procesar tu consulta en este momento. Por favor, inténtalo de nuevo más tarde.',
-        timestamp: new Date().toISOString() 
+        timestamp: new Date().toISOString()
       };
       setMessages(prev => [...prev, errorMessage]);
-      
+
       sendAlert({
         type: 'warning',
         message: 'Error en el chat de IA. Usando respuesta de fallback.'
@@ -148,21 +148,21 @@ const AIChatPanel = ({ isOpen, onClose, currentData, kpis, context, runServerles
   };
 
   return (
-    <Panel 
-      id="ai-chat-panel" 
+    <Panel
+      id="ai-chat-panel"
       title="Consulta con IA sobre los datos de salud"
       onClose={onClose}
     >
       <Flex direction="column" gap="medium">
-        <div style={{ height: '400px', overflowY: 'auto', marginBottom: '16px', border: '1px solid #e1e4e8', borderRadius: '4px', padding: '12px' }}>
+        <Box style={{ height: '400px', overflowY: 'auto', marginBottom: '16px', border: '1px solid #e1e4e8', borderRadius: '4px', padding: '12px' }}>
           {messages.length === 0 ? (
             <Text format={{ color: 'secondary' }}>
-              ¡Hola! Soy tu asistente de IA especializado en salud. Puedo ayudarte a analizar los datos del paciente. 
+              ¡Hola! Soy tu asistente de IA especializado en salud. Puedo ayudarte a analizar los datos del paciente.
               Pregúntame sobre tendencias, interpretación de métricas, o cualquier aspecto de los datos de salud.
             </Text>
           ) : (
             messages.map((message, index) => (
-              <div key={index} style={{ marginBottom: '12px' }}>
+              <Box key={index} style={{ marginBottom: '12px' }}>
                 <Text format={{ fontWeight: 'bold', color: message.role === 'user' ? 'primary' : 'secondary' }}>
                   {message.role === 'user' ? '👤 Tú:' : '🤖 IA:'}
                 </Text>
@@ -171,7 +171,7 @@ const AIChatPanel = ({ isOpen, onClose, currentData, kpis, context, runServerles
                   {new Date(message.timestamp).toLocaleTimeString()}
                 </Text>
                 <Divider />
-              </div>
+              </Box>
             ))
           )}
           {isLoading && (
@@ -180,8 +180,8 @@ const AIChatPanel = ({ isOpen, onClose, currentData, kpis, context, runServerles
               <Text format={{ color: 'secondary' }}>IA está escribiendo...</Text>
             </Flex>
           )}
-        </div>
-        
+        </Box>
+
         <Flex gap="small">
           <Input
             name="chatMessage"
@@ -196,7 +196,7 @@ const AIChatPanel = ({ isOpen, onClose, currentData, kpis, context, runServerles
               }
             }}
           />
-          <Button 
+          <Button
             onClick={handleSendMessage}
             disabled={!inputMessage.trim() || isLoading}
             type="primary"
@@ -204,7 +204,7 @@ const AIChatPanel = ({ isOpen, onClose, currentData, kpis, context, runServerles
             Enviar
           </Button>
         </Flex>
-        
+
         <Button onClick={onClose}>Cerrar Chat</Button>
       </Flex>
     </Panel>
@@ -214,8 +214,8 @@ const AIChatPanel = ({ isOpen, onClose, currentData, kpis, context, runServerles
 // Este panel muestra los resúmenes automáticos que genera la IA
 const AISummaryPanel = ({ isOpen, onClose, summary, isLoading }) => {
   return (
-    <Panel 
-      id="ai-summary-panel" 
+    <Panel
+      id="ai-summary-panel"
       title={summary?.title || 'Resumen de IA'}
       onClose={onClose}
     >
@@ -226,7 +226,7 @@ const AISummaryPanel = ({ isOpen, onClose, summary, isLoading }) => {
             <Text>Generando resumen con IA...</Text>
           </Flex>
         ) : summary ? (
-          <div>
+          <>
             {summary.dateRange && (
               <Text format={{ fontSize: 'small', color: 'secondary' }}>
                 Período: {summary.dateRange.label}
@@ -234,11 +234,11 @@ const AISummaryPanel = ({ isOpen, onClose, summary, isLoading }) => {
             )}
             <Divider />
             <Text>{summary.content}</Text>
-          </div>
+          </>
         ) : (
           <EmptyState title="No hay resumen disponible" />
         )}
-        
+
         <Button onClick={onClose}>Cerrar</Button>
       </Flex>
     </Panel>
@@ -254,12 +254,12 @@ const Extension = ({ context, runServerless, sendAlert }) => {
   const [previousData, setPreviousData] = useState(null);
   const [kpis, setKpis] = useState(null);
   const [userId, setUserId] = useState('');
-  
+
   // Estados para manejar los resúmenes que genera la IA
   const [aiSummary, setAiSummary] = useState(null);
   const [showSummaryPanel, setShowSummaryPanel] = useState(false);
   const [isGeneratingSummary, setIsGeneratingSummary] = useState(false);
-  
+
   // Estados para el chat interactivo con la IA
   const [showChatPanel, setShowChatPanel] = useState(false);
 
@@ -273,30 +273,31 @@ const Extension = ({ context, runServerless, sendAlert }) => {
   // Esta función trae todos los datos de salud del paciente usando nuestras funciones serverless
   const loadHealthData = useCallback(async (period) => {
     if (!userId) return;
-    
+
     setIsLoading(true);
     try {
       // Calculamos qué fechas necesitamos para el período actual
       const currentRange = calculateDateRange(period);
-      
+
       // Y también las fechas del período anterior para poder hacer comparaciones
       const previousRange = calculateDateRange(period * 2);
       const previousStart = previousRange.startDate;
       const previousEnd = currentRange.startDate;
 
       // Usamos nuestra función serverless que ya está hecha para traer los datos
-      const response = await runServerless('healthDashboard', {
-        propertiesToSend: ['hs_object_id'],
-        parameters: {
-          objectType: context.crm.objectTypeId,
-          objectId: context.crm.objectId,
-          period: period,
-          currentStart: currentRange.startDate,
-          currentEnd: currentRange.endDate,
-          previousStart: previousStart,
-          previousEnd: previousEnd
-        }
-      });
+      const response = await hubspot
+        .serverless('healthDashboard', {
+          propertiesToSend: ['hs_object_id'],
+          parameters: {
+            objectType: context.crm.objectTypeId,
+            objectId: context.crm.objectId,
+            period: period,
+            currentStart: currentRange.startDate,
+            currentEnd: currentRange.endDate,
+            previousStart: previousStart,
+            previousEnd: previousEnd
+          }
+        });
 
       if (response && response.success) {
         setCurrentData(response.data);
@@ -309,13 +310,13 @@ const Extension = ({ context, runServerless, sendAlert }) => {
 
     } catch (error) {
       console.error('Error loading health data:', error);
-      
+
       // Si algo falla, usamos datos de ejemplo para que el equipo pueda seguir desarrollando
       const mockWeightData = [
         { date: currentRange.startDate, weight: 70.5, muscle: 35.2, fat: 15.8 },
         { date: currentRange.endDate, weight: 70.1, muscle: 35.0, fat: 16.0 }
       ];
-      
+
       const mockSleepData = [
         { date: currentRange.startDate, duration: 7.5, deepSleep: 2.1, quality: 'good' },
         { date: currentRange.endDate, duration: 7.8, deepSleep: 2.2, quality: 'good' }
@@ -334,7 +335,7 @@ const Extension = ({ context, runServerless, sendAlert }) => {
         ],
         analytics: []
       };
-      
+
       const mockKPIs = {
         weight: { current: 70.3, previous: 70.8, change: -0.7 },
         muscle: { current: 35.1, previous: 34.9, change: 0.6 },
@@ -344,11 +345,11 @@ const Extension = ({ context, runServerless, sendAlert }) => {
         steps: { current: 8400, previous: 8200, change: 2.4 },
         waist: { current: 85.2, previous: 85.8, change: -0.7 }
       };
-      
+
       setCurrentData(mockData);
       setKpis(mockKPIs);
       setPreviousData({});
-      
+
       sendAlert({
         type: 'warning',
         message: 'Usando datos de ejemplo. Verifique la conectividad con los servicios.'
@@ -377,7 +378,7 @@ const Extension = ({ context, runServerless, sendAlert }) => {
 
     setIsGeneratingSummary(true);
     setShowSummaryPanel(true);
-    
+
     try {
       const dateRange = summaryType === 'current' ? calculateDateRange(selectedPeriod) : null;
       const dataToAnalyze = summaryType === 'current' ? currentData : {
@@ -412,15 +413,15 @@ const Extension = ({ context, runServerless, sendAlert }) => {
           type: 'success',
           dateRange: summaryType === 'current' ? calculateDateRange(selectedPeriod) : null
         };
-      
+
         setAiSummary(formattedSummary);
       } else {
         throw new Error(response?.error || 'Error desconocido');
       }
-      
+
     } catch (error) {
       console.error('Error generating AI summary:', error);
-      
+
       // Fallback con resumen mock
       const mockSummaries = {
         current: `Resumen del período de ${selectedPeriod} días:
@@ -442,7 +443,7 @@ El paciente muestra una evolución positiva en sus métricas de salud durante es
 4. Seguimiento en 2-3 semanas
 
 ⚠️ NOTA: Este es un resumen generado con datos de ejemplo.`,
-        
+
         general: `Resumen general del historial del paciente:
 
 🔍 EVOLUCIÓN A LARGO PLAZO:
@@ -473,7 +474,7 @@ El historial muestra un patrón consistente de seguimiento de salud y bienestar.
         content: mockSummaries[summaryType],
         type: 'warning'
       });
-      
+
       sendAlert({
         type: 'warning',
         message: 'Se generó un resumen de ejemplo. Verifique la conectividad con los servicios de IA.'
@@ -486,7 +487,7 @@ El historial muestra un patrón consistente de seguimiento de salud y bienestar.
   // Preparar datos para gráficos
   const prepareChartData = (data, field, label) => {
     if (!data || !Array.isArray(data)) return [];
-    
+
     return data.map(item => ({
       date: new Date(item.date).toISOString().split('T')[0], // Format as YYYY-MM-DD
       [field]: item[field],
@@ -497,19 +498,19 @@ El historial muestra un patrón consistente de seguimiento de salud y bienestar.
   // Preparar datos específicos para gráficos de composición corporal
   const prepareCompositionData = (weightData) => {
     if (!weightData || !Array.isArray(weightData)) return [];
-    
+
     const muscleData = weightData.map(item => ({
       date: new Date(item.date).toISOString().split('T')[0],
       value: item.muscle,
       type: 'Masa Muscular'
     })).filter(item => item.value != null);
-    
+
     const fatData = weightData.map(item => ({
       date: new Date(item.date).toISOString().split('T')[0],
       value: item.fat,
       type: 'Masa Grasa'
     })).filter(item => item.value != null);
-    
+
     return [...muscleData, ...fatData];
   };
 
@@ -538,12 +539,12 @@ El historial muestra un patrón consistente de seguimiento de salud y bienestar.
             options={DATE_FILTER_OPTIONS}
           />
         </Flex>
-        <EmptyState 
-          title="No hay datos de salud disponibles" 
+        <EmptyState
+          title="No hay datos de salud disponibles"
           layout="vertical"
         >
           <Text>
-            No se encontraron datos para el período seleccionado. 
+            No se encontraron datos para el período seleccionado.
             Verifique que el paciente tenga información registrada.
           </Text>
         </EmptyState>
@@ -568,7 +569,7 @@ El historial muestra un patrón consistente de seguimiento de salud y bienestar.
         </Flex>
 
         {/* KPIs Grid */}
-        <div>
+        <>
           <Text format={{ fontWeight: 'bold' }}>Indicadores Clave de Salud</Text>
           <Divider />
           <Flex wrap="wrap" gap="medium">
@@ -624,13 +625,13 @@ El historial muestra un patrón consistente de seguimiento de salud y bienestar.
               />
             )}
           </Flex>
-        </div>
+        </>
 
         {/* Gráficos de Tendencias */}
-        <div>
+        <>
           <Text format={{ fontWeight: 'bold' }}>Tendencias y Visualizaciones</Text>
           <Divider />
-          
+
           {/* Gráfico de Peso */}
           {currentData.weightData && currentData.weightData.length > 0 && (
             <Tile>
@@ -762,13 +763,13 @@ El historial muestra un patrón consistente de seguimiento de salud y bienestar.
               </Flex>
             </Tile>
           )}
-        </div>
+        </>
 
         {/* Módulo de Resúmenes con IA */}
-        <div>
+        <>
           <Text format={{ fontWeight: 'bold' }}>Análisis con Inteligencia Artificial</Text>
           <Divider />
-          
+
           {/* Resúmenes Automáticos */}
           <Tile>
             <Flex direction="column" gap="small">
@@ -810,10 +811,10 @@ El historial muestra un patrón consistente de seguimiento de salud y bienestar.
               </Button>
             </Flex>
           </Tile>
-        </div>
+        </>
 
         {/* Información adicional */}
-        <div>
+        <>
           <Text format={{ fontWeight: 'bold' }}>Información del Período</Text>
           <Divider />
           <Flex gap="medium" wrap="wrap">
@@ -833,7 +834,7 @@ El historial muestra un patrón consistente de seguimiento de salud y bienestar.
               🧪 Analíticas: {currentData.analytics?.length || 0}
             </Text>
           </Flex>
-        </div>
+        </>
       </Flex>
 
       {/* Panel de Resumen de IA */}
