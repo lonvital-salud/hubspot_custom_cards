@@ -4,7 +4,7 @@
   "author": "HubSpot",
   "license": "MIT",
   "dependencies": {
-    "@hubspot/ui-extensions": "^0.9.8",
+    "@hubspot/ui-extensions": "^0.10.1",
     "react": "^18.3.1"
   }
 }

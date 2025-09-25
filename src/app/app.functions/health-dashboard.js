@@ -12,11 +12,27 @@ function formatDateObj(dateObj) {
 
 // Aquí calculamos los KPIs comparando el período actual vs el anterior - bastante útil para ver tendencias
 function calculateKPIs(currentData, previousData) {
+  function getNestedValue(obj, path) {
+    return path.split('.').reduce((acc, key) => (acc && acc[key] !== undefined ? acc[key] : undefined), obj);
+  }
+
   const calculateAverage = (data, field) => {
     if (!data || data.length === 0) return null;
-    const validValues = data.filter(item => item[field] != null && !isNaN(item[field]));
+    const validValues = data
+      .map(item => getNestedValue(item, field))
+      .filter(val => val != null && (typeof val === 'number' || (typeof val === 'object' && val.value != null)));
+
     if (validValues.length === 0) return null;
-    return validValues.reduce((sum, item) => sum + item[field], 0) / validValues.length;
+    // Extrae el valor numérico, ya sea directo o desde el objeto {value, unit}
+    const numbers = validValues.map(val =>
+      typeof val === 'number'
+        ? val
+        : Number(val.value)
+    ).filter(num => !isNaN(num));
+
+    if (numbers.length === 0) return null;
+
+    return numbers.reduce((sum, num) => sum + num, 0) / numbers.length;
   };
 
   const calculateChange = (current, previous) => {
@@ -25,46 +41,47 @@ function calculateKPIs(currentData, previousData) {
   };
 
   // KPI de peso corporal
-  const currentWeight = calculateAverage(currentData.weight, 'weight');
-  const previousWeight = calculateAverage(previousData.weight, 'weight');
-  
+  const currentWeight = calculateAverage(currentData.weight, 'data.weight');
+  const previousWeight = calculateAverage(previousData.weight, 'data.weight');
+
   // KPI de masa muscular
-  const currentMuscle = calculateAverage(currentData.weight, 'muscle');
-  const previousMuscle = calculateAverage(previousData.weight, 'muscle');
-  
+  const currentMuscle = calculateAverage(currentData.weight, 'data.muscle_mass');
+  const previousMuscle = calculateAverage(previousData.weight, 'data.muscle_mass');
+
   // KPI de masa grasa
-  const currentFat = calculateAverage(currentData.weight, 'fat');
-  const previousFat = calculateAverage(previousData.weight, 'fat');
-  
+  const currentFat = calculateAverage(currentData.weight, 'data.fat_mass_weight');
+  const previousFat = calculateAverage(previousData.weight, 'data.fat_mass_weight');
+
   // KPI de sueño total
-  const currentTotalSleep = calculateAverage(currentData.sleep, 'duration');
-  const previousTotalSleep = calculateAverage(previousData.sleep, 'duration');
-  
+  const currentTotalSleep = calculateAverage(currentData.sleep, 'data.totalMinutesAsleep');
+  const previousTotalSleep = calculateAverage(previousData.sleep, 'data.totalMinutesAsleep');
+
   // KPI de sueño profundo - como la API no nos da este dato, lo estimamos como 22% del sueño total (es un promedio médico aceptable)
+  // FIX: La api si lo trae.
   const estimateDeepSleep = (sleepData) => {
     if (!sleepData || sleepData.length === 0) return null;
-    const validSleepData = sleepData.filter(item => item.duration != null && !isNaN(item.duration));
+    const validSleepData = sleepData.filter(item => item.data && item.data.stages);
     if (validSleepData.length === 0) return null;
-    
+
     return validSleepData.map(item => ({
       ...item,
-      deepSleep: item.duration * 0.22 // Usamos 22% porque es lo que recomiendan los estudios de sueño
+      deepSleep: item.data.stages?.deep
     }));
   };
-  
+
   const currentSleepWithDeepSleep = estimateDeepSleep(currentData.sleep);
   const previousSleepWithDeepSleep = estimateDeepSleep(previousData.sleep);
-  
+
   const currentDeepSleep = calculateAverage(currentSleepWithDeepSleep, 'deepSleep');
   const previousDeepSleep = calculateAverage(previousSleepWithDeepSleep, 'deepSleep');
-  
+
   // KPI de pasos - si tenemos datos reales los usamos, sino ponemos unos valores de ejemplo
-  const currentSteps = calculateAverage(currentData.steps, 'steps') || 8500;
-  const previousSteps = calculateAverage(previousData.steps, 'steps') || 8200;
-  
+  const currentSteps = calculateAverage(currentData.steps, 'data.steps');
+  const previousSteps = calculateAverage(previousData.steps, 'data.steps');
+
   // KPI de cintura - ojo que la API usa el campo 'waist' no 'measurement'
-  const currentWaist = calculateAverage(currentData.waist, 'waist');
-  const previousWaist = calculateAverage(previousData.waist, 'waist');
+  const currentWaist = calculateAverage(currentData.waist, 'data.measurementWaistCm');
+  const previousWaist = calculateAverage(previousData.waist, 'data.measurementWaistCm');
 
   return {
     weight: {
@@ -107,59 +124,74 @@ function calculateKPIs(currentData, previousData) {
 
 // Esta función prepara los datos para que se vean bien en los gráficos del frontend
 function formatChartData(data) {
-  const formatWeight = (weightData) => {
-    return weightData.map(item => ({
-      date: new Date(item.date).toISOString(),
-      weight: item.weight
-    })).sort((a, b) => new Date(a.date) - new Date(b.date));
-  };
+  try {
+    // Helper para extraer valor numérico de un campo que puede ser número, string o { value: 'X' }
+    const extractValue = (val) => {
+      if (val && typeof val === 'object' && val.value !== undefined) {
+        return Number(val.value);
+      }
+      return typeof val === 'number' ? val : Number(val);
+    };
 
-  const formatComposition = (weightData) => {
-    const muscleData = weightData.map(item => ({
-      date: new Date(item.date).toISOString(),
-      value: item.muscle,
-      type: 'Masa Muscular'
-    }));
-    
-    const fatData = weightData.map(item => ({
-      date: new Date(item.date).toISOString(),
-      value: item.fat,
-      type: 'Masa Grasa'
-    }));
-    
-    return [...muscleData, ...fatData].sort((a, b) => new Date(a.date) - new Date(b.date));
-  };
+    const formatWeight = (weightData) => {
+      return weightData.map(item => ({
+        date: new Date(item.datetime).toISOString(),
+        weight: extractValue(item.data.weight)
+      })).sort((a, b) => new Date(a.date) - new Date(b.date));
+    };
 
-  const formatSleep = (sleepData) => {
-    return sleepData.map(item => ({
-      date: new Date(item.datetime).toISOString(), // Cuidado que aquí la API usa 'datetime' en vez de 'date'
-      duration: item.duration,
-      deepSleep: item.duration * 0.22, // Otra vez la estimación del sueño profundo
-      quality: item.quality
-    })).sort((a, b) => new Date(a.date) - new Date(b.date));
-  };
+    const formatComposition = (weightData) => {
+      const muscleData = weightData.map(item => ({
+        date: new Date(item.datetime).toISOString().split('T')[0],
+        value: extractValue(item.data.muscle_mass),
+        type: 'Masa Muscular',
+        breakdown: 'muscle_mass' // Para que la IA lo identifique mejor
+      }));
 
-  const formatSteps = (stepsData) => {
-    return stepsData.map(item => ({
-      date: new Date(item.date).toISOString(),
-      steps: item.steps
-    })).sort((a, b) => new Date(a.date) - new Date(b.date));
-  };
+      const fatData = weightData.map(item => ({
+        date: new Date(item.datetime).toISOString().split('T')[0],
+        value: extractValue(item.data.fat_mass_weight),
+        type: 'Masa Grasa',
+        breakdown: 'fat_mass_weight' // Para que la IA lo identifique mejor
+      }));
 
-  const formatWaist = (waistData) => {
-    return waistData.map(item => ({
-      date: new Date(item.measurementTimeStamp).toISOString(), // Para cintura, la API usa 'measurementTimeStamp'
-      measurement: item.waist // Y también usa 'waist' en lugar de 'measurement' - hay que estar atentos
-    })).sort((a, b) => new Date(a.date) - new Date(b.date));
-  };
+      return [...muscleData, ...fatData].sort((a, b) => new Date(a.date) - new Date(b.date));
+    };
 
-  return {
-    weightData: data.weight ? formatWeight(data.weight) : [],
-    compositionData: data.weight ? formatComposition(data.weight) : [],
-    sleepData: data.sleep ? formatSleep(data.sleep) : [],
-    stepsData: data.steps ? formatSteps(data.steps) : [],
-    waistData: data.waist ? formatWaist(data.waist) : []
-  };
+    const formatSleep = (sleepData) => {
+      return sleepData.map(item => ({
+        date: new Date(item.datetime).toISOString(), // Cuidado que aquí la API usa 'datetime' en vez de 'date'
+        duration: extractValue(item.data.totalMinutesAsleep),
+        deepSleep: extractValue(item.data.stages.rem),
+        quality: item.quality
+      })).sort((a, b) => new Date(a.date) - new Date(b.date));
+    };
+
+    const formatSteps = (stepsData) => {
+      return stepsData.map(item => ({
+        date: new Date(item.datetime).toISOString(),
+        steps: extractValue(item.data.steps)
+      })).sort((a, b) => new Date(a.date) - new Date(b.date));
+    };
+
+    const formatWaist = (waistData) => {
+      return waistData.map(item => ({
+        date: new Date(item.datetime).toISOString(), // Para cintura, la API usa 'measurementTimeStamp'
+        measurement: extractValue(item.data.measurementWaistCm) // Y también usa 'waist' en lugar de 'measurement' - hay que estar atentos
+      })).sort((a, b) => new Date(a.date) - new Date(b.date));
+    };
+
+    return {
+      weightData: data.weight ? formatWeight(data.weight) : [],
+      compositionData: data.weight ? formatComposition(data.weight) : [],
+      sleepData: data.sleep ? formatSleep(data.sleep) : [],
+      stepsData: data.steps ? formatSteps(data.steps) : [],
+      waistData: data.waist ? formatWaist(data.waist) : []
+    };
+  } catch (err) {
+    console.error('Error in formatChartData:', err, 'Input data:', data);
+    throw err;
+  }
 }
 
 exports.main = async (context = {}) => {
@@ -172,30 +204,29 @@ exports.main = async (context = {}) => {
       accessToken: process.env['PRIVATE_APP_ACCESS_TOKEN']
     });
 
-    // Primero necesitamos obtener el contacto asociado desde HubSpot
-    const response = await hubspotClient.crm.objects.associationsApi.getAll(
-      context.parameters.objectType,
-      context.parameters.objectId,
-      'contacts'
-    );
+    let userId = context.parameters.objectId;
+    let useHistoriaClinnica = false;
+    if (context.parameters.objectType !== '0-1' && context.parameters.objectType !== 'contacts') {
+      // Primero necesitamos obtener el contacto asociado desde HubSpot
+      const response = await hubspotClient.crm.objects.associationsApi.getAll(
+        context.parameters.objectType,
+        context.parameters.objectId,
+        'contacts'
+      );
 
-    const associatedContactId = response.results[0].id;
+      userId = response.results[0].id;
+    }
+
     const contact = await hubspotClient.crm.contacts.basicApi.getById(
-      associatedContactId, 
+      userId,
       ['firstname', 'lastname', 'email', 'historia_clinica']
     );
 
-    let userId = contact.properties.email || contact.properties.historia_clinica;
-    let useHistoriaClinnica = false;
-    
-    if (!contact.properties.email && contact.properties.historia_clinica) {
-      userId = contact.properties.historia_clinica;
-      useHistoriaClinnica = true;
-    }
-    
-    if (!userId) {
+    if (!contact) {
       throw new Error('No se encontró email o historia clínica para el contacto');
     }
+
+    userId = contact.properties.email;
 
     const currentStart = context.parameters.currentStart;
     const currentEnd = context.parameters.currentEnd;
@@ -223,18 +254,23 @@ exports.main = async (context = {}) => {
         params: getBaseParams(currentStart, currentEnd),
         headers
       }).catch(() => ({ data: { data: [] } })),
-      
+
       axios.get(`${lonvitalApiUrl}/sleep/${userId}`, {
         params: getBaseParams(currentStart, currentEnd),
         headers
       }).catch(() => ({ data: { data: [] } })),
-      
+
       axios.get(`${lonvitalApiUrl}/waist/${userId}`, {
         params: getBaseParams(currentStart, currentEnd),
         headers
       }).catch(() => ({ data: { data: [] } })),
-      
+
       axios.get(`${lonvitalApiUrl}/analytics/${userId}`, {
+        params: getBaseParams(currentStart, currentEnd),
+        headers
+      }).catch(() => ({ data: { data: [] } })),
+
+      axios.get(`${lonvitalApiUrl}/activity/${userId}`, {
         params: getBaseParams(currentStart, currentEnd),
         headers
       }).catch(() => ({ data: { data: [] } }))
@@ -246,18 +282,23 @@ exports.main = async (context = {}) => {
         params: getBaseParams(previousStart, previousEnd),
         headers
       }).catch(() => ({ data: { data: [] } })),
-      
+
       axios.get(`${lonvitalApiUrl}/sleep/${userId}`, {
         params: getBaseParams(previousStart, previousEnd),
         headers
       }).catch(() => ({ data: { data: [] } })),
-      
+
       axios.get(`${lonvitalApiUrl}/waist/${userId}`, {
         params: getBaseParams(previousStart, previousEnd),
         headers
       }).catch(() => ({ data: { data: [] } })),
-      
+
       axios.get(`${lonvitalApiUrl}/analytics/${userId}`, {
+        params: getBaseParams(previousStart, previousEnd),
+        headers
+      }).catch(() => ({ data: { data: [] } })),
+
+      axios.get(`${lonvitalApiUrl}/activity/${userId}`, {
         params: getBaseParams(previousStart, previousEnd),
         headers
       }).catch(() => ({ data: { data: [] } }))
@@ -275,7 +316,7 @@ exports.main = async (context = {}) => {
       sleep: currentResults[1].data.data || [],
       waist: currentResults[2].data.data || [],
       analytics: currentResults[3].data.data || [],
-      steps: [] // Datos de ejemplo porque aún no tenemos steps en la API
+      steps: currentResults[4].data.data || [],
     };
 
     const previousData = {
@@ -283,8 +324,9 @@ exports.main = async (context = {}) => {
       sleep: previousResults[1].data.data || [],
       waist: previousResults[2].data.data || [],
       analytics: previousResults[3].data.data || [],
-      steps: [] // Datos de ejemplo porque aún no tenemos steps en la API
+      steps: previousResults[4].data.data || [],
     };
+
 
     // Calculamos todos los KPIs con la data que trajimos
     const kpis = calculateKPIs(currentData, previousData);
@@ -305,7 +347,7 @@ exports.main = async (context = {}) => {
 
   } catch (error) {
     console.error('Error in health dashboard:', error);
-    
+
     // Si algo falla, devolvemos datos de ejemplo para que el equipo pueda seguir trabajando
     return {
       success: false,

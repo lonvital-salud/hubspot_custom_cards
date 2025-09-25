@@ -28,7 +28,7 @@ async function chatWithOpenAI(message, patientData, chatHistory = []) {
 Tienes acceso a los siguientes datos del paciente:
 - Información personal: ${patientData.contact?.name || 'N/A'} (${patientData.contact?.email || 'N/A'})
 - KPIs actuales: Peso: ${patientData.kpis?.weight?.current || 'N/A'} kg, Masa muscular: ${patientData.kpis?.muscle?.current || 'N/A'} kg, Masa grasa: ${patientData.kpis?.fat?.current || 'N/A'} kg
-- Sueño promedio: ${patientData.kpis?.totalSleep?.current || 'N/A'} horas totales, ${patientData.kpis?.deepSleep?.current || 'N/A'} horas profundas
+- Sueño promedio: ${patientData.kpis?.totalSleep?.current || 'N/A'} minutos totales, ${patientData.kpis?.deepSleep?.current || 'N/A'} minutos profundos
 - Actividad: ${patientData.kpis?.steps?.current || 'N/A'} pasos promedio
 - Tendencias: Los cambios porcentuales vs período anterior están disponibles para análisis
 
